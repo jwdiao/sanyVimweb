@@ -1,0 +1,18 @@
+
+.login_input .ant-input{
+  border: none;
+  border-bottom: 1px solid #D3DFEF;
+  padding-left: 50px !important;
+  height: 50px;
+  border-radius: 0;
+}
+
+.ant-input-affix-wrapper .ant-input:focus {
+  border: none;
+  border-bottom: 1px solid #D3DFEF !important;
+  box-shadow: none;
+}
+.login_input .ant-input-prefix{
+  width: 50px;padding-left:5px;
+}
+

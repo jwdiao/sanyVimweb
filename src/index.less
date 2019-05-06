@@ -1,0 +1,199 @@
+@primaryColor: #3766C7;
+@secondaryColor: #4294E6;
+:global {
+  .ant-modal-header {
+    background-color: #5a8cff;
+  }
+}
+
+.customSelect {
+  :global {
+    .ant-select-selection {
+      overflow: hidden;
+    }
+  }
+}
+
+.am-list-body {
+  background-color: #eee !important;
+}
+div.am-list-body::before{
+  background-color: #eee !important;
+}
+div.am-list-body::after{
+  background-color: #eee !important;
+}
+.navbar-common-class {
+  &.am-navbar {
+    background-color: @primaryColor;
+    background: -webkit-linear-gradient(90deg, @primaryColor, @secondaryColor); /* Safari 5.1 - 6.0 */
+    background: -o-linear-gradient(90deg, @primaryColor, @secondaryColor); /* Opera 11.1 - 12.0 */
+    background: -moz-linear-gradient(90deg, @primaryColor, @secondaryColor); /* Firefox 3.6 - 15 */
+    background: linear-gradient(90deg, @primaryColor, @secondaryColor); /* 标准的语法（必须放在最后） */
+    height: 60px;
+  }
+}
+
+.am-tabs {
+  .am-tabs-tab-bar-wrap {
+    .am-tabs-default-bar{
+      background-color: @primaryColor;
+      background: -webkit-linear-gradient(90deg, @primaryColor, @secondaryColor); /* Safari 5.1 - 6.0 */
+      background: -o-linear-gradient(90deg, @primaryColor, @secondaryColor); /* Opera 11.1 - 12.0 */
+      background: -moz-linear-gradient(90deg, @primaryColor, @secondaryColor); /* Firefox 3.6 - 15 */
+      background: linear-gradient(90deg, @primaryColor, @secondaryColor); /* 标准的语法（必须放在最后） */
+    }
+  }
+}
+.popup-search-bar{
+  width:100%;
+}
+.trigger {
+  font-size: 18px;
+  line-height: 64px;
+  padding: 0 24px;
+  cursor: pointer;
+  transition: color .3s;
+  color: PRIMARY_COLOR;
+}
+
+.editable-row .ant-form-explain {
+  position: absolute;
+  font-size: 12px;
+  margin-top: -4px;
+}
+
+.data-board-table{
+  .ant-table {
+    height: calc(100vh - 260px);
+    min-height: calc(100vh - 260px);
+    margin: 0 10px;
+    border-collapse: separate;
+  }
+
+  .ant-table-pagination.ant-pagination {
+    margin: 16px 10px;
+  }
+  //.ant-table-header {
+  //  background: transparent;
+  //}
+  //.ant-table-fixed-header > .ant-table-content > .ant-table-scroll > .ant-table-body {
+  //  background: transparent;
+  //}
+  //.ant-table-thead > tr:first-child > th:first-child {
+  //  border-top-left-radius: 0px;
+  //}
+  //.ant-table-thead > tr:first-child > th:last-child {
+  //  border-top-right-radius: 0px;
+  //}
+  .ant-table-thead > tr > th {
+    height: 40px;
+    padding: 0 8px;
+    background-color: rgb(226,238,246);
+    color: #000;
+    // border-bottom: 0 transparent solid;
+    text-align: center;
+    // border: 10px black solid;
+  }
+  .ant-table-tbody > tr > td {
+    padding: 0 8px;
+    height: calc((100vh - 300px)/10);
+    text-align: center;
+    //background: transparent;
+    //color: rgba(2, 201, 252, 1);
+    // border-bottom: 0 transparent solid;
+    border-collapse: separate;
+  }
+}
+
+.data-board-mini-table{
+  .ant-table {
+    height: 280px;
+    max-height: 280px;
+    margin: 0 10px;
+    border-collapse: separate;
+    //border: 10px red solid;
+  }
+
+  &.ant-table-wrapper {
+    width: 100%;
+  }
+
+  .ant-table-pagination.ant-pagination {
+    margin: 16px 10px;
+  }
+  //.ant-table-header {
+  //  background: transparent;
+  //}
+  //.ant-table-fixed-header > .ant-table-content > .ant-table-scroll > .ant-table-body {
+  //  background: transparent;
+  //}
+  //.ant-table-thead > tr:first-child > th:first-child {
+  //  border-top-left-radius: 0px;
+  //}
+  //.ant-table-thead > tr:first-child > th:last-child {
+  //  border-top-right-radius: 0px;
+  //}
+  .ant-table-thead > tr > th {
+    height: 40px;
+    padding: 0 8px;
+    background-color: rgb(226,238,246);
+    color: #000;
+    // border-bottom: 0 transparent solid;
+    text-align: center;
+    // border: 10px black solid;
+  }
+  .ant-table-tbody > tr > td {
+    padding: 0 8px;
+    height: 40px;
+    text-align: center;
+    //background: transparent;
+    //color: rgba(2, 201, 252, 1);
+    // border-bottom: 0 transparent solid;
+    border-collapse: separate;
+  }
+}
+
+@font-face {
+  font-family: 'iconfont';
+  src: url('./assets/font/iconfont.eot');
+  src: url('./assets/font/iconfont.eot?#iefix') format('embedded-opentype'),
+      url('./assets/font/iconfont.woff2') format('woff2'),
+      url('./assets/font/iconfont.woff') format('woff'),
+      url('./assets/font/iconfont.ttf') format('truetype'),
+      url('./assets/font/iconfont.svg#iconfont') format('svg');
+}
+.iconfont {
+  font-family: "iconfont" !important;
+  font-size: 16px;
+  font-style: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.editable-cell {
+  position: relative;
+}
+
+.editable-cell-value-wrap {
+  padding: 5px 12px;
+  cursor: pointer;
+}
+
+.editable-row:hover .editable-cell-value-wrap {
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  padding: 4px 11px;
+}
+
+.input-style {
+  &.am-list-item {
+    height: 24px !important;
+    min-height: 24px !important;
+    padding: 0 !important;
+  }
+
+  &.am-list-item &.am-input-control input {
+    font-size: 14px;
+  }
+}
