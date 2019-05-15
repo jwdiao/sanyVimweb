@@ -1,6 +1,6 @@
 import {BrowserRouter as Router, Route, Switch} from 'react-router-dom'
 import React from "react";
-import {AdminPage, LoginMobilePage, LoginPcPage, LookOverPcPage, ShippingPcPage, ShippingMobilePage, ReceivingPage, DispatchPage, MainPage,SupplierSelectMobilePage} from "../modules";
+import {AdminPage, LoginMobilePage, LoginPcPage, LookOverPcPage, LookOverMobilePage, ShippingPcPage, ShippingMobilePage, MainPage,SupplierSelectMobilePage} from "../modules";
 import { AddOtherReceivingInfoDetail } from "../modules/receiving/components/AddOtherReceivingInfoDetail";
 import NotFound from '../NotFound';
 import {ReceivingConfirmList} from "../modules/receiving/components/ReceivingConfirmList";
@@ -9,25 +9,12 @@ import {AddTransferInfo} from "../modules/transfer/components/AddTransferInfo";
 import {AddTransferInfoDetail} from "../modules/transfer/components/AddTransferInfoDetail";
 import {AddDeliverDispatchInfo} from "../modules/dispatch/components/AddDeliverDispatchInfo";
 import {AddDeliverDispatchInfoDetail} from "../modules/dispatch/components/AddDeliverDispatchInfoDetail";
-
-const isPcBrowser = () => {
-    let userAgentInfo = navigator.userAgent;
-    const agents = ["Android", "iPhone",
-        "SymbianOS", "Windows Phone",
-        "iPad", "iPod"];
-    let flag = true;
-    for (let v = 0; v < agents.length; v++) {
-        if (userAgentInfo.indexOf(agents[v]) > 0) {
-            flag = false;
-            break;
-        }
-    }
-    return flag;
-}
+import { isPcBrowser } from '../utils'
+import { PrivateRoute} from '../components'
 
 const getRouters = () => {
     return (
-        <Router>
+        <Router basename="/vmi">
             <div>
                 <Switch>
                     <Route
@@ -151,11 +138,19 @@ const getRouters = () => {
                     <Route
                         path="/look-over"
                         render={props => {
-                            return (
-                                <LookOverPcPage
-                                    router={props}
-                                />
-                            )
+                            if (isPcBrowser()) {
+                                return (
+                                    <LookOverPcPage
+                                        router={props}
+                                    />
+                                )
+                            } else {
+                                return (
+                                    <LookOverMobilePage
+                                        router={props}
+                                    />
+                                )
+                            }
                         }}
                     />
                     <Route

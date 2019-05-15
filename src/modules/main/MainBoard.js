@@ -9,8 +9,9 @@ import { MyPage } from '../my';
 class _MainBoard extends Component {
     constructor(props) {
         super(props);
+        console.log('props', props);
         this.state = {
-            selectedTab: 'receive',
+            selectedTab: this.props.router.location.state?this.props.router.location.state.selectedTab:'receive',
             hidden: false,
         };
     }
@@ -33,7 +34,7 @@ class _MainBoard extends Component {
                 comp = <MyPage />;
                 break;
             default:
-                comp = 'default';
+                comp = <ReceivingPage />
         }
         return comp;
     }

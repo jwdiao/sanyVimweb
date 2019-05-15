@@ -30,7 +30,7 @@ class _TransferPage extends Component {
                 </div>
                 <AddButton
                     onClick={() => {
-                        history.push('/main/add-transfer')
+                        history.push('/main/add-transfer', {from: 'transfer'})
                     }}
                 >
                     <Icon type={'plus'} style={{color: 'white', fontSize: '24px', fontWeight: 'bolder'}}/>

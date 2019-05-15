@@ -1,11 +1,12 @@
 const path = require('path')
 const theme = require('./package.json').theme
+const htmlWebpackPlugin = require('html-webpack-plugin');
 module.exports = {
     entry: path.resolve(__dirname, './src/index.js'),
     output: {
         path: path.resolve(__dirname, 'dist'),
         filename: 'webpack-bundle.js',
-        // publicPath: "../assets/"
+        publicPath: '/'
     },
     mode: "development",
     resolve: {
@@ -54,6 +55,15 @@ module.exports = {
                         },
                     },
                 ],
+            },
+            {
+                test: /\.(ttf|eot|woff|woff2)$/,
+                use: {
+                    loader: "file-loader",
+                    options: {
+                        name: "fonts/[name].[ext]",
+                    },
+                },
             }
         ]
     },
@@ -61,6 +71,18 @@ module.exports = {
     //     contentBase: [path.join(__dirname, 'public'), path.join(__dirname, 'dist')]
     // }
     devServer: {
-        contentBase: path.join(__dirname, 'dist')
-    }
+        contentBase: path.join(__dirname, './dist'),
+        historyApiFallback: true,
+    },
+    plugins:[
+        new htmlWebpackPlugin({
+            template:'public/index.html' 
+        })
+    ]
+    // devServer: {
+    //     host: 'localhost',
+    //     port: 3090,
+    //     historyApiFallback: true,
+    //     open: true
+    // }
 }

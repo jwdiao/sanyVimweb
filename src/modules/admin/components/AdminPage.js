@@ -3,14 +3,12 @@
  */
 
 import React, {Component} from 'react';
-
+import { withRouter } from 'react-router-dom';
 import {Avatar, Button, Icon, Layout, Menu} from 'antd';
 import styled from "styled-components";
-import {InputModal} from "./InputModal";
 import {TableController} from "./TableController";
-import {NewUserModal} from "./NewUserModal";
 
-import {superAdminMenuItems as menuItems} from '../../../utils'
+import {superAdminMenuItems as menuItems, Durian} from '../../../utils'
 
 const {
     Header, Sider,
@@ -23,6 +21,7 @@ const SubMenu = Menu.SubMenu;
  * PC 端页面
  */
 class _AdminPage extends Component {
+    loginUser = Durian.get('user');
     state = {
         collapsed: false,
         selectedTabKey: 'sany_factory'
@@ -35,7 +34,8 @@ class _AdminPage extends Component {
     }
 
     logout = () => {
-        console.log('logout button clicked!')
+        Durian.clear();
+        this.props.history.push('/');
     }
 
     render() {
@@ -96,10 +96,10 @@ class _AdminPage extends Component {
                                 <div>{`基础数据管理-${menuItems.filter(item => item.key === selectedTabKey)[0].title}`}</div>
                             </HeaderContainer>
                             <HeaderContainer>
-                                <div style={{fontSize: 18, fontWeight: "normal"}}>username，欢迎您</div>
+                                <div style={{fontSize: 18, fontWeight: "normal"}}>{this.loginUser?this.loginUser.name:''}，欢迎您</div>
                                 <Button
                                     style={{margin: '0 30px 0 20px'}}
-                                    type="primary" icon="logout" size="default">退出</Button>
+                                    type="primary" icon="logout" size="default" onClick={this.logout}>退出</Button>
                             </HeaderContainer>
                         </StyledHeader>
                         <StyledContent>
@@ -116,7 +116,7 @@ class _AdminPage extends Component {
     }
 }
 
-export const AdminPage = _AdminPage;
+export const AdminPage = withRouter(_AdminPage);
 
 const RootView = styled.div`
   height: calc(100vh);

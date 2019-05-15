@@ -1,20 +1,46 @@
 import React, { Component } from 'react';
 import styled from "styled-components";
 import { WhiteSpace } from 'antd-mobile';
+import {withRouter} from 'react-router-dom'
 
 import OperationList from './OperationList'
+import { Durian } from '../../../utils'
 
 class _MyPage extends Component {
+
+  constructor (props) {
+    super(props);
+    this.user = null;
+  }
+
+  componentWillMount () {
+    this.user = Durian.get('user');
+    console.log(this.user);
+  }
+
+  onClickListener =({itemKey})=> {
+    console.log('onClickListener called', itemKey)
+    switch (itemKey) {
+      case 'change_vendor':
+        this.props.history.push('/supplierselect', {from: 'my'});
+        break
+      case 'view_report':
+        this.props.history.push('/look-over', {from: 'my'})
+        break
+      default:
+        break
+    }
+  }
 
   render() {
     const data = [
       {
-        key: "1",
+        key: "change_vendor",
         icon:<span className='iconfont' style={{ fontSize: '1rem', color: '#fff', padding:'0.5rem', borderRadius:'0.2rem',  backgroundColor:'#4EC7FF' }}>&#xe611;</span>,
         text:"供应商切换"
       },
       {
-        key: "2",
+        key: "view_report",
         icon:<span className='iconfont' style={{ fontSize: '1rem', color: '#fff', padding:'0.5rem', borderRadius:'0.2rem',  backgroundColor:'#47F3A0' }}>&#xe610;</span>,
         text:"查询报表信息"
       }
@@ -29,8 +55,8 @@ class _MyPage extends Component {
           <ProfilePanel>
             <ProfileImage src={require('../../../assets/images/avatar.png')} alt="vmi" />
             <ProfileContent>
-              <ProfileName>WANG XIAOLIU</ProfileName>
-              <ProfileVendor>供应商A</ProfileVendor>
+              <ProfileName>{this.user.name}</ProfileName>
+              <ProfileVendor>{this.user.vendor.label}</ProfileVendor>
             </ProfileContent>
           </ProfilePanel>
           <WhiteSpace size="lg" />
@@ -40,7 +66,11 @@ class _MyPage extends Component {
               <OperationTitleText>切换设置</OperationTitleText>
             </OperationTitle>
             <WhiteSpace size="lg" />
-            <OperationList width="90%" data = {data} />
+            <OperationList
+                width="90%"
+                data = {data}
+                onClickListener={this.onClickListener}
+            />
           </OperationPanel>
         </MainPanel>
       </RootView>
@@ -48,7 +78,7 @@ class _MyPage extends Component {
   }
 }
 
-export const MyPage = _MyPage
+export const MyPage = withRouter(_MyPage)
 
 const RootView = styled.div`
   width:100%;
@@ -104,7 +134,7 @@ const ProfileImage = styled.img`
 `
 const ProfileContent = styled.div`
   width: 100%;
-  padding-top:3vh;
+  padding-top:1vh;
   display: flex;
   flex-direction: column;
   align-items: center;

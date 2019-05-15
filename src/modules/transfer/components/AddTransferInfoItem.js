@@ -8,19 +8,17 @@ class _AddTransferInfoItem extends Component {
     render() {
         const material = this.props.data
         let materialKeys = _.keys(material)
-        let index = materialKeys.findIndex(material=>material === 'id')
-        materialKeys.splice(index,1)
+        // let index = materialKeys.findIndex(material=>material === 'id')
+        // materialKeys.splice(index,1)
         return (
             <RootView>
                 <OperationHeader>
-                    <StyledButton isEnabled={false} onClick={()=>{
-                    }}>删除</StyledButton>
-                    <StyledButton isEnabled={true} onClick={()=>{
-                    }}>修改</StyledButton>
+                    <StyledButton isEnabled={false} onClick={() => this.props.onDelete(material)}>删除</StyledButton>
+                    <StyledButton isEnabled={true} onClick={() => this.props.onEdit(material)}>修改</StyledButton>
                 </OperationHeader>
                 <ContentView>
                     {
-                        materialKeys.map((materialKey, index) => {
+                        materialKeys.slice(1,materialKeys.length).map((materialKey, index) => {
                             return (
                                 <ItemWrapper
                                     key={materialKey}>
@@ -29,7 +27,7 @@ class _AddTransferInfoItem extends Component {
                                         <ContentContentText>{material[materialKey]}</ContentContentText>
                                     </ItemView>
                                     {
-                                        index < materialKeys.length-1 && (
+                                        index < materialKeys.length-2 && (
                                             <SeparateLine/>
                                         )
                                     }

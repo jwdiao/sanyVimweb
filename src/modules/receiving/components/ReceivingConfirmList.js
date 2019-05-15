@@ -5,11 +5,10 @@ import freshId from 'fresh-id'
 
 import {PullToRefresh, ListView, Modal} from 'antd-mobile';
 import { Checkbox } from 'antd';
-import {ReceivingItem} from "./ReceivingItem";
 import {ReceivingConfirmItem} from "./ReceivingConfirmItem";
 import {CommonHeader} from "../../../components";
 import moment from "moment/moment";
-
+import { http, Durian } from '../../../utils'
 function closest(el, selector) {
     const matchesSelector = el.matches || el.webkitMatchesSelector || el.mozMatchesSelector || el.msMatchesSelector;
     while (el) {
@@ -66,14 +65,27 @@ class _ReceivingConfirmList extends Component {
     }
 
     async componentDidMount() {
-        const {itemData} = this.props.router.location.state
-        const {materials} = itemData
+        const {itemData} = this.props.location.state
+        const code = itemData.number;
+
+        const dbMat = await http.get(`/orderMaterial/find/ordercode/${code}`);
+        let materials = dbMat.data.map(m => {
+            return {
+                id: m.id,
+                material: m.materiaCode,
+                status: m.status,
+                materialDescription: m.materiaName,
+                quantity:m.materiaNum,
+                inInventoryQuantity: m.totalNumber,
+                qualifiedQuantity: m.qualifiedNumber,
+            }
+        });
         const hei = this.state.height - ReactDOM.findDOMNode(this.lv).offsetTop;
 
-        this.rData = materials.map((_data) => ({id: freshId(), ..._data})) //retrieving data from server;
-        console.log(this.rData)
+        this.rData = materials;//.map((_data) => ({id: freshId(), ..._data})) //retrieving data from server;
         this.setState({
             dataSource: this.state.dataSource.cloneWithRows(this.rData),
+            materials: materials,
             height: hei,
             refreshing: false,
             isLoading: false,
@@ -93,20 +105,34 @@ class _ReceivingConfirmList extends Component {
     };
 
     onEndReached = async (event) => {
-        const {itemData} = this.props.router.location.state
-        const {materials} = itemData
-        // load new data
-        // hasMore: from backend data, indicates whether it is the last page, here is false
-        if (this.state.isLoading && !this.state.hasMore) {
-            return;
-        }   //如果this.state.hasMore为false，说明没数据了，直接返回
-        console.log('reach end', event);
-        this.setState({ isLoading: true });
-        this.rData = this.rData.concat(materials.map((_data) => ({id: freshId(), ..._data})));  //每次下拉之后将新数据装填过来
-        this.setState({
-            dataSource: this.state.dataSource.cloneWithRows(this.rData),
-            isLoading: false,
-        });
+        // const {itemData} = this.props.location.state
+        // const code = itemData.number;
+
+        // console.log(code);
+        // const dbMat = await http.get(`/orderMaterial/find/ordercode/${code}`);
+        // console.log('-------------------------------------------------------------------------------------');
+        // console.log(dbMat.data);
+        // console.log('-------------------------------------------------------------------------------------');
+        // let materials = dbMat.data.map(m => {
+        //     return {
+        //         material: m.materiaCode,
+        //         materialDescription: m.materiaName,
+        //         quantity:m.qualifiedNumber,
+        //     }
+        // });
+        // console.log(materials);
+        // // load new data
+        // // hasMore: from backend data, indicates whether it is the last page, here is false
+        // if (this.state.isLoading && !this.state.hasMore) {
+        //     return;
+        // }   //如果this.state.hasMore为false，说明没数据了，直接返回
+        // console.log('reach end', event);
+        // this.setState({ isLoading: true });
+        // this.rData = this.rData.concat(materials.map((_data) => ({id: freshId(), ..._data})));  //每次下拉之后将新数据装填过来
+        // this.setState({
+        //     dataSource: this.state.dataSource.cloneWithRows(this.rData),
+        //     isLoading: false,
+        // });
     };
 
     onClose = key => () => {
@@ -132,7 +158,7 @@ class _ReceivingConfirmList extends Component {
             this.setState((prevState) => {
                 return {
                     showModal:true,
-                    currentClickedItem: Object.assign({},prevState.currentClickedItem,{material:data.material}, {inInventoryQuantity}, {qualifiedQuantity})
+                    currentClickedItem: Object.assign({},prevState.currentClickedItem, {id: data.id}, {material:data.material}, {inInventoryQuantity}, {qualifiedQuantity})
                 }
             })
         } else {
@@ -141,16 +167,40 @@ class _ReceivingConfirmList extends Component {
 
     }
 
-    commitData = () => {
-        //TODO:提交数据至后端
-        console.log('commitData called!')
+    commitData = async () => {
+        const item = this.state.currentClickedItem;
+        let notReceivedItems = this.state.materials.filter(m => m.status === 1);
+        console.log('notReceivedItems', notReceivedItems);
+        const isUpdateOrder = notReceivedItems.length === 1 ? 1 : 0;//如果待收货列表数量为1则收货后需要更新订单状态
+        const user = Durian.get('user');
+        const supplierCode = user.vendor.value;
+        let params = {
+            id: item.id,
+            totalNumber: item.inInventoryQuantity,
+            qualifiedNumber: item.qualifiedQuantity,
+            supplierCode:supplierCode,
+            isUpdateOrder: isUpdateOrder,
+        }
+        const result = await http.post('/orderMaterial/receive', params);
+        console.log('result', result);
+        if (result.ret === '200' && result.msg === '成功') {
+            let materials = this.state.materials;
+            materials = materials.map(i => {
+                if (i.id === item.id) {
+                    i.status = 2;
+                }
+            })
+            this.setState({
+                materials: materials
+            });
+        }
     }
 
     render() {
         console.log('_ReceivingConfirmList props', this.props)
-        const {itemData, indicatorBarColor} = this.props.router.location.state
+        const {itemData, indicatorBarColor} = this.props.location.state
         const { currentClickedItem } = this.state
-        const {vmiFactory, materials} = itemData
+        const {vmiFactory} = itemData
         //这里就是个渲染数据，rowData就是每次过来的那一批数据，已经自动给你遍历好了，rouID可以作为key值使用，直接渲染数据即可
         const row = (rowData, sectionID, rowID) => {
             return (
@@ -172,7 +222,7 @@ class _ReceivingConfirmList extends Component {
                     renderFooter={    //renderFooter就是下拉时候的loading效果，这里的内容可以自己随需求更改
                         () => (
                             <div style={{ padding: 30, textAlign: 'center' }}>
-                                {this.state.isLoading ? 'Loading...' : 'Loaded'}
+                                {this.state.isLoading ? '加载中...' : '加载完毕'}
                             </div>
                         )
                     }

@@ -11,7 +11,7 @@ export const superAdminMenuItems = [
     },
     {
         key: 'vendor',
-        title: '供应商工厂管理',
+        title: '供应商管理',
         iconType: 'user'
     },
     {
@@ -19,65 +19,20 @@ export const superAdminMenuItems = [
         title: '用户管理',
         iconType: 'user'
     },
-]
-
-export const userTableColumns = [
     {
-        title: '序号',
-        dataIndex: 'id',
-        width: '4%',
-        editable: true,
-    },
-    {
-        title: '用户名',
-        dataIndex: 'userName',
-        width: '9%',
-        editable: true,
-    },
-    {
-        title: '姓名',
-        dataIndex: 'name',
-        width: '9%',
-        editable: true,
-    },
-    {
-        title: '手机号',
-        dataIndex: 'mobile',
-        width: '14%',
-        editable: true,
-    },
-    {
-        title: '供应商',
-        dataIndex: 'vendor',
-        width: '9%',
-        editable: true,
-    },
-    {
-        title: '角色',
-        dataIndex: 'role',
-        width: '9%',
-        editable: true,
-    },
-    {
-        title: '状态',
-        dataIndex: 'status',
-        width: '9%',
-        editable: true,
-    },
-    {
-        title: '创建时间',
-        dataIndex: 'createdAt',
-        width: '17%',
-        editable: true,
+        key: 'basic_material_type_management',
+        title: '基础物料管理',
+        iconType: 'user'
     }
 ]
 
+// 基础信息-SANY工厂管理
 export const sanyFactoryTableColumns = [
     {
         title: '序号',
-        dataIndex: 'id',
+        dataIndex: 'index',
         width: '10%',
-        editable: true,
+        editable: false,
     },
     {
         title: 'SANY工厂编号',
@@ -101,16 +56,17 @@ export const sanyFactoryTableColumns = [
         title: '创建时间',
         dataIndex: 'createdAt',
         width: '16%',
-        editable: true,
+        editable: false,
     }
 ]
 
+// 基础信息-供应商管理
 export const vendorsTableColumns = [
     {
         title: '序号',
-        dataIndex: 'id',
+        dataIndex: 'index',
         width: '10%',
-        editable: true,
+        editable: false,
     },
     {
         title: '供应商编号',
@@ -134,24 +90,104 @@ export const vendorsTableColumns = [
         title: '创建时间',
         dataIndex: 'createdAt',
         width: '16%',
-        editable: true,
+        editable: false,
     }
 ]
 
-export const validStateMap = [
+// 基础信息-用户管理
+export const userTableColumns = [
     {
-        key:'valid',
-        value:'启用',
-        label:'启用'
+        title: '序号',
+        dataIndex: 'index',
+        width: '5%',
+        editable: false,
     },
     {
-        key:'invalid',
-        value:'停用',
-        label:'停用'
+        title: '用户名',
+        dataIndex: 'userName',
+        width: '10%',
+        editable: true,
+    },
+    {
+        title: '姓名',
+        dataIndex: 'name',
+        width: '10%',
+        editable: true,
+    },
+    {
+        title: '手机号',
+        dataIndex: 'mobile',
+        width: '12%',
+        editable: true,
+    },
+    {
+        title: '供应商',
+        dataIndex: 'vendor',
+        width: '15%',
+        editable: true,
+    },
+    {
+        title: '角色',
+        dataIndex: 'role',
+        width: '10%',
+        editable: true,
+    },
+    {
+        title: '状态',
+        dataIndex: 'status',
+        width: '5%',
+        editable: true,
+    },
+    {
+        title: '创建时间',
+        dataIndex: 'createdAt',
+        width: '18%',
+        editable: false,
     }
 ]
 
-export const unitMap = [
+// 基础信息-基础物料管理
+export const basicMaterialTypeTableColumns = [
+    {
+        title: '序号',
+        dataIndex: 'index',
+        width: '5%',
+        editable: false,
+    },
+    {
+        title: '物料编号',
+        dataIndex: 'material',
+        width: '15%',
+        editable: true,
+    },
+    {
+        title: '物料',
+        dataIndex: 'materialDescription',
+        width: '15%',
+        editable: true,
+    },
+    {
+        title: '单位',
+        dataIndex: 'unit',
+        width: '10%',
+        editable: true,
+    },
+    {
+        title: '状态',
+        dataIndex: 'status',
+        width: '10%',
+        editable: true,
+    },
+    {
+        title: '创建时间',
+        dataIndex: 'createdAt',
+        width: '20%',
+        editable: false,
+    }
+]
+
+// 单位列表（应从后端获取）
+export const unitList = [
     {
         key:'unit_t',
         value:'t',
@@ -164,35 +200,36 @@ export const unitMap = [
     }
 ]
 
-
-export const roleMap = [
+// 角色列表
+export const roleList = [
     {
         key:'super_admin',
-        value:'超级管理员',
-        label:'超级管理员'
-    },
-    {
-        key:'sender',
-        value:'发货员',
-        label:'发货员'
-    },
-    {
-        key:'receiver',
-        value:'收货员',
-        label:'收货员'
+        value:1,
+        label:'系统管理员'
     },
     {
         key:'sany_admin',
-        value:'工厂管理员',
-        label:'工厂管理员'
+        value:2,
+        label:'VMI工厂管理员'
+    },
+    {
+        key:'receiver',
+        value:3,
+        label:'供应商仓管员'
+    },
+    {
+        key:'sender',
+        value:4,
+        label:'供应商发货员'
     },
     {
         key:'vendor_admin',
-        value:'供应商管理员',
+        value:5,
         label:'供应商管理员'
     }
 ]
 
+// 供应商列表（应从后端获取）
 export const vendorList = [
     {
         key: 'vendor1',
@@ -211,6 +248,7 @@ export const vendorList = [
     }
 ]
 
+// 工厂列表（应从后端获取）
 export const factoryList = [
     {
         key: 'factory1',

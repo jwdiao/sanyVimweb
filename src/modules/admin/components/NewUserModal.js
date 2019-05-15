@@ -6,9 +6,9 @@ import {
     Modal,
     Input,
     Form,
-    Select
+    Select, message
 } from 'antd';
-import {roleMap, factoryList} from "../../../utils";
+import {roleList, http} from "../../../utils";
 
 const {Option} = Select;
 
@@ -23,17 +23,16 @@ const formItemLayout = {
     },
 };
 
-function hasErrors(fieldsError) {
-    return Object.keys(fieldsError).some(field => fieldsError[field]);
-}
-
 class _NewUserModal extends Component {
     constructor(props) {
         super(props)
         this.state = {
-            ModalText: 'Content of the modal',
             visible: false,
             confirmLoading: false,
+
+            _vendorList:[],
+
+            currentSelectedRole:'',
         }
     }
 
@@ -43,44 +42,144 @@ class _NewUserModal extends Component {
         })
     }
 
-    componentDidMount() {
+    async componentDidMount() {
         this.props.form.validateFields();
-    }
-
-    handleOk = () => {
-        this.setState({
-            ModalText: 'The modal will be closed after two seconds',
-            confirmLoading: true,
-        });
-        setTimeout(() => {
+        const result = await http.post('/supplier/supplierList',{})
+        if (result.ret === '200') {
             this.setState({
-                visible: false,
-                confirmLoading: false,
-            });
-        }, 2000);
+                _vendorList: result.data.content.map(item => ({key: `vendor_${item.code}`, value: item.code, label: item.name}))
+            })
+        } else {
+            message.error('获取供应商列表失败！请稍候重试。')
+        }
     }
 
     handleCancel = () => {
         console.log('Clicked cancel button');
         this.setState({
             visible: false,
+
         });
+        if (this.props.onCancelClickedListener) {
+            this.props.onCancelClickedListener()
+        }
     }
 
     handleSubmit = (e) => {
         e.preventDefault();
-        this.props.form.validateFields((err, values) => {
+        this.props.form.validateFields(async (err, values) => {
             if (!err) {
-                console.log('Received values of form: ', values);
+                // 网络请求
+                console.log('values', values)
+                const {userName,name,mobile,password,role} = values
+                let params = {
+                    status:1, // 默认启用状态
+                    userName:userName,// 用户名
+                    name:name,// 姓名
+                    phone:mobile,// 电话
+                    password:password,// 密码
+                    type:role,// 角色
+                }
+
+                this.setState({
+                    visible: true,
+                    confirmLoading: true,
+                });
+
+                // 系统管理员、工厂管理员不需要选择供应商
+                // 收货员可以多选供应商
+                if (role === 3){
+                    let vendorStr = ''
+                    values.vendor.forEach(v=>{
+                        if (v !== '') {
+                            vendorStr += v+','
+                        }
+                    })
+                    params = Object.assign({}, params, {
+                        supplierCode:vendorStr,
+                    })
+                }
+                // 发货员、供应商管理员可以单选供应商
+                else if (role === 4 || role === 5) {
+                    params = Object.assign({}, params, {
+                        supplierCode:values.vendor,
+                    })
+                }
+
+                const result = await this.callNetworkRequest({
+                    requestUrl: '/user/addOrUpdateUser',
+                    params,
+                    requestMethod:'POST'
+                })
+
+                if (!!result) {
+                    const addedData = {
+                        // key: freshId(),
+                        // // id: content.id,
+                        // sanyId: factoryCode,
+                        // sanyName: factoryName,
+                        // status: 1,
+                        // // createdAt: formatDate(content.createTime),
+                    }
+                    if (this.props.onOkClickedListener) {
+                        this.props.onOkClickedListener(this.props.modalType, addedData)
+                    }
+                } else {
+                    message.error('数据提交失败！请稍候重试。')
+                }
+                this.setState({
+                    visible: false,
+                    confirmLoading: false,
+                });
+            } else {
+                message.error('请检查输入内容后再提交！')
             }
         });
     }
 
+    nameUniqueValidator = async (rule, value, callback, source, options) => {
+        let errors = [];
+        const result = await this.callNetworkRequest({
+            requestUrl:'/user/validateUser',
+            params:{
+                userName: value,
+            },
+            requestMethod:'POST',
+        })
+        if (!isEmpty(value) && !result){
+            callback('用户名已被使用！')
+        }
+        callback()
+    }
+
+    mobileValidValidator = (rule, value, callback, source, options) => {
+        if (!isEmpty(value)) {
+            if (/^1[3|4|5|6|7|8|9][0-9]{9}$/.test(value)) {
+                callback()
+            } else {
+                callback('请输入有效的手机号码！')
+            }
+        }
+        callback()
+    }
+
+    // 调用网络请求
+    callNetworkRequest = async ({requestUrl, params, requestMethod}) => {
+        let result
+        if (requestMethod === 'POST') {
+            result = await http.post(requestUrl,params)
+        } else {
+            result = await http.get(requestUrl)
+        }
+        console.log('request:',requestUrl,'params:',params,'result:',result)
+        return result && result.ret === '200'
+    }
+
     render() {
-        const {visible, confirmLoading} = this.state;
+        const {_vendorList, visible, confirmLoading, currentSelectedRole} = this.state;
 
         const {
-            getFieldDecorator, getFieldsError, getFieldError, isFieldTouched,
+            getFieldDecorator, getFieldError, isFieldTouched,
         } = this.props.form;
 
         // Only show error after a field is touched.
@@ -88,7 +187,7 @@ class _NewUserModal extends Component {
         const nameError = isFieldTouched('name') && getFieldError('name');
         const mobileError = isFieldTouched('mobile') && getFieldError('mobile');
         const passwordError = isFieldTouched('password') && getFieldError('password');
-        const factoryError = isFieldTouched('factory') && getFieldError('factory');
+        const vendorError = isFieldTouched('vendor') && getFieldError('vendor');
         const roleError = isFieldTouched('role') && getFieldError('role');
 
         console.log('InputModal this.state', this.state)
@@ -97,9 +196,10 @@ class _NewUserModal extends Component {
                 <Modal
                     title={'新增用户信息'}
                     visible={visible}
-                    onOk={this.handleOk}
+                    onOk={this.handleSubmit}
                     confirmLoading={confirmLoading}
                     onCancel={this.handleCancel}
+                    destroyOnClose={true}
                 >
                     <Form {...formItemLayout} onSubmit={this.handleSubmit}>
                         <Form.Item
@@ -108,10 +208,12 @@ class _NewUserModal extends Component {
                             help={userNameError || ''}
                         >
                             {getFieldDecorator('userName', {
-                                rules: [{ required: true, message: '请输入您的用户名!' }],
+                                rules: [
+                                    {required: true, message: '请输入您的用户名!'},
+                                    {validator: this.nameUniqueValidator}
+                                ],
                             })(
-                                <Input
-                                    placeholder="请输入用户名" />
+                                <Input placeholder="请输入用户名"/>
                             )}
                         </Form.Item>
 
@@ -121,10 +223,10 @@ class _NewUserModal extends Component {
                             help={nameError || ''}
                         >
                             {getFieldDecorator('name', {
-                                rules: [{ required: true, message: '请输入您的姓名!' }],
+                                rules: [{required: true, message: '请输入您的姓名!'}],
                             })(
                                 <Input
-                                    placeholder="请输入姓名" />
+                                    placeholder="请输入姓名"/>
                             )}
                         </Form.Item>
 
@@ -135,13 +237,14 @@ class _NewUserModal extends Component {
                         >
                             {getFieldDecorator('mobile', {
                                 rules: [
-                                    {required: true, message: '请输入有效的手机号!' },
-                                    {max:11, message: '手机号位数不正确!' },
-                                    ],
+                                    {required: true, message: '请输入手机号!'},
+                                    {max: 11, message: '手机号位数不正确!'},
+                                    {validator: this.mobileValidValidator}
+                                ],
                             })(
                                 <Input
                                     placeholder="请输入手机号"
-                                    type="number"
+                                    type="mobile"
                                 />
                             )}
                         </Form.Item>
@@ -153,7 +256,7 @@ class _NewUserModal extends Component {
                             help={passwordError || ''}
                         >
                             {getFieldDecorator('password', {
-                                rules: [{ required: true, message: '请输入密码!' }],
+                                rules: [{required: true, message: '请输入密码!'}],
                             })(
                                 <Input
                                     placeholder="请输入密码"
@@ -169,12 +272,20 @@ class _NewUserModal extends Component {
                             help={roleError || ''}
                         >
                             {getFieldDecorator('role', {
-                                rules: [{ required: true, message: '请选择角色类型!' }],
-                                initialValue: '发货员',
+                                rules: [{required: true, message: '请选择角色类型!'}],
+                                // initialValue: '发货员',
                             })(
-                                <Select>
+                                <Select
+                                    placeholder="请选择角色"
+                                    onChange={(value)=>{
+                                        console.log('selected role', value)
+                                        this.setState({
+                                            currentSelectedRole: value
+                                        })
+                                    }}
+                                >
                                     {
-                                        roleMap.map(role=>{
+                                        roleList.map(role => {
                                             return (
                                                 <Option
                                                     key={role.key}
@@ -187,37 +298,46 @@ class _NewUserModal extends Component {
                             )}
                         </Form.Item>
 
-                        <Form.Item
-                            label="供应商:"
-                            hasFeedback
-                            validateStatus={factoryError ? 'error' : ''}
-                            help={factoryError || ''}
-                        >
-                            {getFieldDecorator('factory', {
-                                rules: [{ required: true, message: '请选择工厂!' }],
-                                initialValue: '工厂-1',
-                            })(
-                                <Select
-                                    mode="multiple"
-                                >
-                                    {
-                                        factoryList.map(role=>{
-                                            return (
-                                                <Option
-                                                    key={role.key}
-                                                    value={role.value}
-                                                >{role.label}</Option>
-                                            )
-                                        })
-                                    }
-                                </Select>
-                            )}
-                        </Form.Item>
+                        {
+                            currentSelectedRole !== 1 && currentSelectedRole !== 2
+                            && (<Form.Item
+                                label="供应商:"
+                                hasFeedback
+                                validateStatus={vendorError ? 'error' : ''}
+                                help={vendorError || ''}
+                            >
+                                {getFieldDecorator('vendor', {
+                                    rules: [{required: true, message: '请选择工厂!'}],
+                                    // initialValue: '工厂-1',
+                                })(
+                                    <Select
+                                        mode={currentSelectedRole === 3 ? "multiple" :null}
+                                        placeholder="请选择供应商"
+                                        autoClearSearchValue={true}
+                                    >
+                                        {
+                                            _vendorList.map(role => {
+                                                return (
+                                                    <Option
+                                                        key={role.key}
+                                                        value={role.value}
+                                                    >{role.label}</Option>
+                                                )
+                                            })
+                                        }
+                                    </Select>
+                                )}
+                            </Form.Item>)
+                        }
                     </Form>
                 </Modal>
             </div>
         );
     }
+}
+
+function isEmpty(testString) {
+    return !testString || testString.length === 0 || testString === ''
 }
 
 export const NewUserModal = Form.create()(_NewUserModal);

@@ -13,9 +13,26 @@ class _EnhancedPicker extends Component {
   }
 
   componentWillMount() {
-    this.setState({
-      pickerValue: [this.props.data[0].value],
-    })
+    if (this.props.data && this.props.data.length > 0 && this.props.selectedFirst) {
+      if (this.props.selectedFirst) {
+        console.error('selectedFirst === true will not make the first item value evaluate to parent componenet, need to be fixed!');
+      }
+      this.setState({
+        pickerValue: [this.props.data[0].value],
+      }/* , () => {this.props.onPickerOk(this.state.pickerValue)} */)
+    }
+    
+  }
+  componentWillReceiveProps(nextProps) {
+    if (nextProps.data && nextProps.data.length > 0 && this.props.selectedFirst) {
+      if (this.props.selectedFirst) {
+        console.error('selectedFirst === true will not make the first item value evaluate to parent componenet, need to be fixed!');
+      }
+      this.setState({
+        pickerValue: [nextProps.data[0].value],
+      }/* , () => {nextProps.onPickerOk(this.state.pickerValue)} */)
+    }
+    
   }
   onChangeVendor = (val) => {
     this.setState({
@@ -38,7 +55,7 @@ class _EnhancedPicker extends Component {
       lineHeight: '45px',
     }
     if (this.props.showShadow) {
-      wrapperStyle.boxShadow = '7px 4px 18px 0px rgba(53,116,250,0.2)';
+      wrapperStyle.boxShadow = '3px 0px 10px 0px rgba(53,116,250,0.2)';
     }
     let titleWrapperStyle = {
       flex: 1,
@@ -81,7 +98,12 @@ class _EnhancedPicker extends Component {
     if (this.props.cols) {
       cols = this.props.cols;
     }
-    let val = this.props.selectedFirst ? this.state.pickerValue : '';
+    
+    let val =  this.state.pickerValue;
+    
+    if (val.length === 0 && this.props.val) {
+      val = [this.props.val]
+    }
     return (
       <Picker
         data={this.props.data}

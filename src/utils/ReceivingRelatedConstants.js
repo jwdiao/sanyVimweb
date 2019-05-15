@@ -1,7 +1,7 @@
 export const receivingItemsMap = {
     number: '号码',
     vmiFactory: 'VMI工厂',
-    inventoryState: '货物状态',
+    inventoryState: '状态',
     sender: '发货人',
     sentTime: '发货时间'
 }
@@ -9,10 +9,10 @@ export const receivingItemsMap = {
 export const receivedItemsMap = {
     number: '号码',
     vmiFactory: 'VMI工厂',
-    inventoryState: '货物状态',
+    inventoryState: '状态',
 
     material:'物料',
-    materialDescription:'物料描述',
+    materialDescription:'物料名称',
     quantity: '数量',
     sentTime: '发货时间',
     sender: '发货人',
@@ -23,10 +23,10 @@ export const receivedItemsMap = {
 export const otherReceivedItemsMap = {
     number: '号码',
     vmiFactory: 'VMI工厂',
-    inventoryState: '货物状态',
+    inventoryState: '状态',
 
     material:'物料',
-    materialDescription:'物料描述',
+    materialDescription:'物料名称',
     quantity: '数量',
     inventoryPosition: '库位',
     inInventoryTime: '入库时间',

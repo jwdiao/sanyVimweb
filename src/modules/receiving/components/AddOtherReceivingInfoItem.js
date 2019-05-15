@@ -8,19 +8,17 @@ class _AddOtherReceivingInfoItem extends Component {
     render() {
         const material = this.props.data
         let materialKeys = _.keys(material)
-        let index = materialKeys.findIndex(material=>material === 'id')
-        materialKeys.splice(index,1)
+        // let index = materialKeys.findIndex(material=>material === 'id')
+        // materialKeys.splice(index,1)
         return (
             <RootView>
                 <OperationHeader>
-                    <StyledButton isEnabled={false} onClick={()=>{
-                    }}>删除</StyledButton>
-                    <StyledButton isEnabled={true} onClick={()=>{
-                    }}>修改</StyledButton>
+                    <StyledButton isEnabled={false} onClick={() => this.props.onDelete(material)}>删除</StyledButton>
+                    <StyledButton isEnabled={true} onClick={() => this.props.onEdit(material)}>修改</StyledButton>
                 </OperationHeader>
                 <ContentView>
                     {
-                        materialKeys.map((materialKey, index) => {
+                        materialKeys.slice(1,materialKeys.length).map((materialKey, index) => {
                             return (
                                 <ItemWrapper
                                     key={materialKey}>
@@ -29,7 +27,7 @@ class _AddOtherReceivingInfoItem extends Component {
                                         <ContentContentText>{material[materialKey]}</ContentContentText>
                                     </ItemView>
                                     {
-                                        index < materialKeys.length-1 && (
+                                        index < materialKeys.length-2 && (
                                             <SeparateLine/>
                                         )
                                     }
@@ -47,37 +45,28 @@ export const AddOtherReceivingInfoItem = _AddOtherReceivingInfoItem;
 
 const RootView = styled.div`
     background:#fff;
-    height: 230px;
-    // border: 1px red solid;
 `
 const ContentView = styled.div`
     display: flex;
-    flex:1;
     flex-direction: column;
     z-index: 1;
     width: 100%;
-    height: 190px;
-    padding: 10px;
+    padding: 0 10px 10px 10px;
     justify-content: center;
-    //border-top: 1px rgba(216, 215, 215, 1) solid;
-    //border-bottom: 6px dotted RGBA(229, 233, 243, 1);
-    // box-shadow:15px 0px 37px 13px RGBA(229, 233, 243, 1);
-    // border: 2px green solid;
 `
 
 const ItemWrapper = styled.div`
     display:flex;
-    flex:1;
     flex-direction:column;
     justify-content:center;
 `
 
 const ItemView = styled.div`
     display: flex;
-    flex:1;
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+    padding:5px 0;
 `
 
 const SeparateLine = styled.div`
@@ -102,6 +91,7 @@ const OperationHeader = styled.div`
     height: 40px;
     justify-content: flex-end;
     align-items: center;
+    padding-top:10px;
     // border: 1px black solid;
 `
 

@@ -9,3 +9,18 @@ export const generateRandomColor = (index) => {
         return 'rgba(255, 196, 114, 1)'
     }
 }
+
+export const isPcBrowser = () => {
+    let userAgentInfo = navigator.userAgent;
+    const agents = ["Android", "iPhone",
+        "SymbianOS", "Windows Phone",
+        "iPad", "iPod"];
+    let flag = true;
+    for (let v = 0; v < agents.length; v++) {
+        if (userAgentInfo.indexOf(agents[v]) > 0) {
+            flag = false;
+            break;
+        }
+    }
+    return flag;
+}

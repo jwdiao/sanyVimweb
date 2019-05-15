@@ -1,13 +1,47 @@
 import React, {Component} from 'react';
 import styled from "styled-components";
-import {otherReceivedItemsMap, generateRandomColor} from "../../../utils";
+import freshId from 'fresh-id'
+import {otherReceivedItemsMap, generateRandomColor, http, receivedItemsMap} from "../../../utils";
+import {Collapse} from "antd";
+
+const Panel = Collapse.Panel;
 
 const _ = require('lodash')
 
+function callback(key) {
+    console.log(key);
+}
+
 class _OtherReceivedItem extends Component {
+    constructor (props) {
+        super(props);
+        this.state = ({
+            materials:[]
+        });
+    }
+
+    async componentWillMount () {
+        const { data } = this.props
+        const code = data.number;
+        const dbMat = await http.get(`/orderMaterial/find/ordercode/${code}`);
+        let mats = dbMat.data.map(m => {
+            return {
+                material: m.materiaCode,
+                materialDescription: m.materiaName,
+                quantity: m.totalNumber,
+                inventoryPosition: m.wareHouseType,
+                inInventoryTime: m.deliveryTime,
+                reason: m.reason,
+            }
+        });
+        this.setState({
+            materials: mats
+        })
+    }
 
     render() {
-        const { data, isEditState, rowID } = this.props
+        const { data, rowID } = this.props
+        // console.log('data', data);
         // console.log('this.props = ',this.props)
         const { id } = data
         let keys = _.keys(data)
@@ -16,57 +50,106 @@ class _OtherReceivedItem extends Component {
         return (
             <RootView>
                 <IndicatorTopBar color={generateRandomColor(rowID)}/>
-                <HeaderView>
-                    <HeaderTextView>
-                        {
-                            keys.slice(0,3).map((_key, index)=>{
-                                // console.log('_key, index', _key, index)
-                                return (
-                                    <div
-                                        key={_key}
-                                        style={{display:'flex', flex:1, flexDirection:'row', justifyContent:'center'}}>
-                                        <ItemView>
-                                            <TitleText style={{display:'flex', flex:0.3, textAlign:'justify'}}>{otherReceivedItemsMap[_key]}</TitleText>
-                                            <HeaderContentText style={{display:'flex', flex:0.7}}>{data[_key]}</HeaderContentText>
-                                        </ItemView>
-                                    </div>
 
-                                )
-                            })
+                <Collapse
+                    accordion
+                    className="collapse-common-class"
+                    bordered={false}
+                    onChange={callback}
+                    expandIcon={ (panelProps) => {
+                        return (
+                            <ExpandIcon>
+                                <ExpandIconItem></ExpandIconItem>
+                                <ExpandIconItem></ExpandIconItem>
+                                <ExpandIconItem></ExpandIconItem>
+                            </ExpandIcon>
+                        )
                         }
-                    </HeaderTextView>
-                    { true && (
-                        <ReverseButton
-                            onClick={()=>{
-                                console.log('ReverseButton clicked! data id = ',id)
-                            }}
-                        >
-                            冲销
-                        </ReverseButton>
-                    )}
-                </HeaderView>
-                <ContentView>
-                    {
-                        keys.slice(3,keys.length).map((_key, index)=>{
-                            // console.log('_key, index', _key, index)
-                            return (
-                                <div
-                                    key={_key}
-                                    style={{display:'flex', flex:1, flexDirection:'column', justifyContent:'center'}}>
-                                    <ItemView>
-                                        <TitleText>{otherReceivedItemsMap[_key]}</TitleText>
-                                        <ContentContentText>{data[_key]}</ContentContentText>
-                                    </ItemView>
-                                    {
-                                        index < keys.length-4 && (
-                                            <SeparateLine/>
-                                        )
-                                    }
-                                </div>
-                            )
-                        })
                     }
-                </ContentView>
+                    style={{
+                        width:'100%',
+                    }}
+                >
+                    <Panel
+                        header={
+                            <HeaderView>
+                                <HeaderTextView>
+                                    {
+                                        keys.slice(0,3).map((_key, index)=>{
+                                            // console.log('_key, index', _key, index)
+                                            return (
+                                                <div
+                                                    key={_key}
+                                                    style={{display:'flex', flex:1, flexDirection:'row', justifyContent:'center'}}>
+                                                    <ItemView>
+                                                        <TitleText style={{display:'flex', flex:0.3, textAlign:'justify'}}>{otherReceivedItemsMap[_key]}</TitleText>
+                                                        <HeaderContentText style={{display:'flex', flex:0.7}}>{data[_key]}</HeaderContentText>
+                                                    </ItemView>
+                                                </div>
+
+                                            )
+                                        })
+                                    }
+                                </HeaderTextView>
+                                {
+                                    true && <ReverseButton
+                                        onClick={(event)=>{
+                                            event.stopPropagation();
+                                            console.log('ReverseButton clicked! data id = ',id)
+                                            this.props.onReverse(id);
+                                        }}
+                                    >
+                                        冲销
+                                    </ReverseButton>
+
+                                }
+                            </HeaderView>
+                        }
+                        key="1"
+                        showArrow={true}
+                    >
+                        <ContentView>
+                            {
+                                this.state.materials.map((material, mIndex)=>{
+                                    // console.log('_key, index', _key, index)
+                                    let _keys = _.keys(material)
+                                    let itemStyle = {
+                                        display:'flex',
+                                        flex:1,
+                                        flexDirection:'column',
+                                        justifyContent:'center',
+                                        padding:'10px 26px 26px'
+                                    }
+                                    if (mIndex !== this.state.materials.length-1) {
+                                        itemStyle.borderBottom = '1px rgba(216, 215, 215, 1) solid';
+                                    }
+                                    return (
+                                        <div
+                                            key={freshId()}
+                                            style={itemStyle}
+                                        >
+                                            {
+                                                _keys.map((key,index)=>{
+                                                    return (
+                                                        <ItemWrapper
+                                                            key={key}>
+                                                            <ItemView>
+                                                                <TitleText>{otherReceivedItemsMap[key]}</TitleText>
+                                                                <ContentContentText>{material[key]}</ContentContentText>
+                                                            </ItemView>
+                                                            <SeparateLine/>
+                                                        </ItemWrapper>
+
+                                                    )
+                                                })
+                                            }
+                                        </div>
+                                    )
+                                })
+                            }
+                        </ContentView>
+                    </Panel>
+                </Collapse>
             </RootView>
         );
     }
@@ -78,15 +161,26 @@ const RootView = styled.div`
     background: #fff;
     display: flex;
     flex: 1;
-    height:322px;
+    //height:322px;
     flex-direction: column;
-    margin: 16px 16px 16px 20px;
+    margin:16px 16px -3px 16px;
     justify-content: center;
     align-items: center;
-    border-radius: 2px;
-    box-shadow:0 20px 37px 13px RGBA(229, 233, 243, 1);
+    border-radius: 4px;
+    position:relative;
+    overflow:hidden;
+    padding-bottom:16px;
+    ::before {
+        content: ' ';
+        width: 100%;
+        height: 0;
+        position: absolute;
+        bottom: -4px;
+        border-bottom: 8px dotted #eee;
+        left: 4px;
+        right: 4px;
+    }
 `
-
 const IndicatorTopBar = styled.div`
     display: flex;
     // position: relative;
@@ -100,16 +194,15 @@ const IndicatorTopBar = styled.div`
 
 const HeaderView = styled.div`
     display: flex;
-    flex:0.3;
     flex-direction: row;
     z-index: 100;
     width: 100%;
-    // height: 96px;
-    padding: 10px;
+    height: 110px;
+    padding: 10px 0;
     justify-content: center;
     align-items: center;
-    // border: 1px yellow solid;
-    box-shadow:0 0 30px 0 RGBA(229, 233, 243, 1) inset;
+    // border: 1px red solid;
+    // box-shadow:0 0 30px 0 RGBA(229, 233, 243, 1) inset;
 `
 
 const HeaderTextView = styled.div`
@@ -117,25 +210,28 @@ const HeaderTextView = styled.div`
     flex:1;
     flex-direction: column;
     z-index: 100;
-    width: 100%;  
-    height: 100%;  
+    width: 100%;
+    height: 100%;
     justify-content: center;
     // border: 1px red solid;
 `
 
 const ContentView = styled.div`
     display: flex;
-    flex:0.7;
     flex-direction: column;
     z-index: 1;
     width: 100%;
     // height: 226px;
-    padding: 10px;
-    margin-bottom: -3px;
+    // padding: 10px 0;
     justify-content: center;
-    border-top: 1px rgba(216, 215, 215, 1) solid;
-    border-bottom: 6px dotted RGBA(229, 233, 243, 1);
     // box-shadow:15px 0px 37px 13px RGBA(229, 233, 243, 1);
+`
+
+const ItemWrapper = styled.div`
+    display:flex;
+    flex:1;
+    flex-direction:column;
+    justify-content:center;
 `
 
 const ItemView = styled.div`
@@ -144,6 +240,7 @@ const ItemView = styled.div`
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+    padding:5px 0;
 `
 
 const SeparateLine = styled.div`
@@ -177,4 +274,11 @@ const ReverseButton = styled.div`
     border-radius: 27px;
     background:linear-gradient(90deg,rgba(9,182,253,1),rgba(96,120,234,1));
     color: white;
+`
+const ExpandIcon = styled.div`
+    width:16px;
+`
+const ExpandIconItem = styled.div`
+    height:3px;
+    border-top:1px solid #bbb;
 `

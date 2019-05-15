@@ -1,12 +1,12 @@
 import React, {Component} from 'react';
 import {
-    goodsStatusMap,
+    orderStatusList,
     materialDescriptionMap,
     materialTypeMap,
     reservoirLibraryList,
-    vendorList
+    vendorList, orderMaterialStatusList
 } from "../../../utils";
-import {Button, DatePicker, Icon, Input, Select, Upload} from "antd";
+import {Button, DatePicker, Input, Select, Upload} from "antd";
 import styled from "styled-components";
 
 const Search = Input.Search;
@@ -20,54 +20,54 @@ class _ShippingHeader extends Component {
         this.state = {
             tab1_obj: {
                 vendorName: '',
-                goodsStatus: '',
-                materialType: '',
+                status: '',
+                material: '',
                 sentTime: '',
             },
             tab2_obj: {
                 vendorName: '',
-                goodsStatus: '',
-                materialType: '',
+                status: '',
+                material: '',
                 sentTime: '',
             },
             tab3_obj: {
                 number: '',
                 vendorName: '',
-                goodsStatus: '',
-                materialType: '',
+                status: '',
+                material: '',
                 sentTime: '',
             },
             tab4_obj: {
                 number: '',
                 vendorName: '',
-                goodsStatus: '',
-                materialType: '',
+                status: '',
+                material: '',
                 sentTime: '',
                 receivedTime: '',
             },
             tab5_obj: {
-                materialId: '',
-                materialName: '',
+                material: '',
+                materialDescription: '',
             },
 
             tab6_obj: {
                 vendorName: '',
-                goodsStatus: '',
-                materialType: '',
+                status: '',
+                material: '',
                 materialDescription: '',
                 location: '',
-                date: '',
+                createdAt: '',
             },
             tab7_obj: {
-                materialType: '',
+                material: '',
                 materialDescription: '',
                 location: '',
-                date: '',
+                createdAt: '',
             },
             tab8_obj: {
                 vendorName: '',
-                goodsStatus: '',
-                materialType: '',
+                status: '',
+                material: '',
                 materialDescription: '',
                 generatedNumber: '',
                 generatedDate: '',
@@ -96,7 +96,6 @@ class _ShippingHeader extends Component {
             tab2_obj,
             tab3_obj,
             tab4_obj,
-            tab5_obj,
             tab6_obj,
             tab7_obj,
             tab8_obj,
@@ -108,48 +107,55 @@ class _ShippingHeader extends Component {
             case 'to_be_shipped_infos':
                 tableComponent = (
                     <TableControllerView>
-                        <TableSearchView style={{width: '700px'}}>
+                        <TableSearchView style={{width: '600px', justifyContent:'flex-start'}}>
+                            {/*<SelectView*/}
+                            {/*    key={'tab1_1'}*/}
+                            {/*    placeHolder="选择供应商"*/}
+                            {/*    options={vendorList}*/}
+                            {/*    onChangeCalled={(value = '') => {*/}
+                            {/*        this.setState((prevState)=>{*/}
+                            {/*            return {*/}
+                            {/*                tab1_obj: Object.assign({}, prevState.tab1_obj, {vendorName: value})*/}
+                            {/*            }*/}
+                            {/*        })*/}
+                            {/*    }}*/}
+                            {/*/>*/}
 
-                            <SelectView
-                                key={'tab1_1'}
-                                placeHolder="选择供应商"
-                                options={vendorList}
-                                onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab1_obj: Object.assign({}, this.state.tab1_obj, {vendorName: value})
-                                    })
-                                }}
-                            />
+                            {/*<SelectView*/}
+                            {/*    key={'tab1_2'}*/}
+                            {/*    placeHolder="选择货物状态"*/}
+                            {/*    options={orderStatusList}*/}
+                            {/*    onChangeCalled={(value = '') => {*/}
+                            {/*        this.setState((prevState)=>{*/}
+                            {/*            return {*/}
+                            {/*                tab1_obj: Object.assign({}, prevState.tab1_obj, {status: value})*/}
+                            {/*            }*/}
+                            {/*        })*/}
+                            {/*    }}*/}
+                            {/*/>*/}
 
-                            <SelectView
-                                key={'tab1_2'}
-                                placeHolder="选择货物状态"
-                                options={goodsStatusMap}
-                                onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab1_obj: Object.assign({}, this.state.tab1_obj, {goodsStatus: value})
-                                    })
-                                }}
-                            />
-
-                            <SelectView
-                                key={'tab1_3'}
-                                placeHolder="选择物料类型"
-                                options={materialTypeMap}
-                                onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab1_obj: Object.assign({}, this.state.tab1_obj, {materialType: value})
-                                    })
-                                }}
-                            />
+                            {/*<SelectView*/}
+                            {/*    key={'tab1_3'}*/}
+                            {/*    placeHolder="选择物料类型"*/}
+                            {/*    options={materialTypeMap}*/}
+                            {/*    onChangeCalled={(value = '') => {*/}
+                            {/*        this.setState((prevState)=>{*/}
+                            {/*            return {*/}
+                            {/*                tab1_obj: Object.assign({}, prevState.tab1_obj, {material: value})*/}
+                            {/*            }*/}
+                            {/*        })*/}
+                            {/*    }}*/}
+                            {/*/>*/}
 
                             <DatePicker
                                 key={'tab1_4'}
-                                style={{marginRight: '6px'}}
-                                placeholder="请选择发货日期"
+                                style={{marginRight: '6px', width:'60%'}}
+                                placeholder="请选择暂存日期"
                                 onChange={(date, dateString)=>{
-                                    this.setState({
-                                        tab1_obj: Object.assign({}, this.state.tab1_obj, {sentTime: dateString})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab1_obj: Object.assign({}, prevState.tab1_obj, {temporaryStoreTime: dateString})
+                                        }
                                     })
                                 }}
                             />
@@ -206,14 +212,16 @@ class _ShippingHeader extends Component {
             case 'reversed_infos':
                 tableComponent = (
                     <TableControllerView>
-                        <TableSearchView style={{width: '700px'}}>
+                        <TableSearchView style={{width: '100%', justifyContent: 'flex-start'}}>
                             <SelectView
                                 key={'tab2_1'}
                                 placeHolder="选择供应商"
                                 options={vendorList}
                                 onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab2_obj: Object.assign({}, this.state.tab2_obj, {vendorName: value})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab2_obj: Object.assign({}, prevState.tab2_obj, {vendorName: value})
+                                        }
                                     })
                                 }}
                             />
@@ -221,32 +229,51 @@ class _ShippingHeader extends Component {
                             <SelectView
                                 key={'tab2_2'}
                                 placeHolder="选择货物状态"
-                                options={goodsStatusMap}
+                                options={orderStatusList}
                                 onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab2_obj: Object.assign({}, this.state.tab2_obj, {goodsStatus: value})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab2_obj: Object.assign({}, prevState.tab2_obj, {status: value})
+                                        }
                                     })
                                 }}
                             />
 
-                            <SelectView
-                                key={'tab2_3'}
-                                placeHolder="选择物料类型"
-                                options={materialTypeMap}
-                                onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab2_obj: Object.assign({}, this.state.tab2_obj, {materialType: value})
-                                    })
-                                }}
-                            />
+                            {/*<SelectView*/}
+                            {/*    key={'tab2_3'}*/}
+                            {/*    placeHolder="选择物料类型"*/}
+                            {/*    options={materialTypeMap}*/}
+                            {/*    onChangeCalled={(value = '') => {*/}
+                            {/*        this.setState((prevState)=>{*/}
+                            {/*            return {*/}
+                            {/*                tab2_obj: Object.assign({}, prevState.tab2_obj, {material: value})*/}
+                            {/*            }*/}
+                            {/*        })*/}
+                            {/*    }}*/}
+                            {/*/>*/}
 
                             <DatePicker
                                 key={'tab2_4'}
                                 style={{marginRight: '6px'}}
                                 placeholder="请选择发货日期"
                                 onChange={(date, dateString)=>{
-                                    this.setState({
-                                        tab2_obj: Object.assign({}, this.state.tab2_obj, {sentTime: dateString})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab2_obj: Object.assign({}, prevState.tab2_obj, {sentTime: dateString})
+                                        }
+                                    })
+                                }}
+                            />
+
+                            <DatePicker
+                                key={'tab2_5'}
+                                style={{marginRight: '6px'}}
+                                placeholder="请选择冲销日期"
+                                onChange={(date, dateString)=>{
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab2_obj: Object.assign({}, prevState.tab2_obj, {reversedTime: dateString})
+                                        }
                                     })
                                 }}
                             />
@@ -271,14 +298,18 @@ class _ShippingHeader extends Component {
                                 placeholder="请输入号码"
                                 onChange={(e) => {
                                     const {value} = e.target
-                                    this.setState({
-                                        tab3_obj: Object.assign({}, this.state.tab3_obj, {number: value})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab3_obj: Object.assign({}, prevState.tab3_obj, {number: value})
+                                        }
                                     })
                                 }}
                                 onPressEnter={(e) => {
                                     const {value} = e.target
-                                    this.setState({
-                                        tab3_obj: Object.assign({}, this.state.tab3_obj, {number: value})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab3_obj: Object.assign({}, prevState.tab3_obj, {number: value})
+                                        }
                                     }, () => onSearchButtonClicked(selectedTabKey, this.state.tab3_obj))
                                 }}
                             />
@@ -288,8 +319,10 @@ class _ShippingHeader extends Component {
                                 placeHolder="选择供应商"
                                 options={vendorList}
                                 onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab3_obj: Object.assign({}, this.state.tab3_obj, {vendorName: value})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab3_obj: Object.assign({}, prevState.tab3_obj, {vendorName: value})
+                                        }
                                     })
                                 }}
                             />
@@ -297,32 +330,38 @@ class _ShippingHeader extends Component {
                             <SelectView
                                 key={'tab3_3'}
                                 placeHolder="选择货物状态"
-                                options={goodsStatusMap}
+                                options={orderStatusList}
                                 onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab3_obj: Object.assign({}, this.state.tab3_obj, {goodsStatus: value})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab3_obj: Object.assign({}, prevState.tab3_obj, {status: value})
+                                        }
                                     })
                                 }}
                             />
 
-                            <SelectView
-                                key={'tab3_4'}
-                                placeHolder="选择物料类型"
-                                options={materialTypeMap}
-                                onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab3_obj: Object.assign({}, this.state.tab3_obj, {materialType: value})
-                                    })
-                                }}
-                            />
+                            {/*<SelectView*/}
+                            {/*    key={'tab3_4'}*/}
+                            {/*    placeHolder="选择物料类型"*/}
+                            {/*    options={materialTypeMap}*/}
+                            {/*    onChangeCalled={(value = '') => {*/}
+                            {/*        this.setState((prevState)=>{*/}
+                            {/*            return {*/}
+                            {/*                tab3_obj: Object.assign({}, prevState.tab3_obj, {material: value})*/}
+                            {/*            }*/}
+                            {/*        })*/}
+                            {/*    }}*/}
+                            {/*/>*/}
 
                             <DatePicker
                                 key={'tab3_5'}
                                 style={{marginRight: '6px'}}
                                 placeholder="请选择发货日期"
                                 onChange={(date, dateString)=>{
-                                    this.setState({
-                                        tab3_obj: Object.assign({}, this.state.tab3_obj, {sentTime: dateString})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab3_obj: Object.assign({}, prevState.tab3_obj, {sentTime: dateString})
+                                        }
                                     })
                                 }}
                             />
@@ -347,14 +386,18 @@ class _ShippingHeader extends Component {
                                 placeholder="请输入号码"
                                 onChange={(e) => {
                                     const {value} = e.target
-                                    this.setState({
-                                        tab4_obj: Object.assign({}, this.state.tab4_obj, {number: value})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab4_obj: Object.assign({}, prevState.tab4_obj, {number: value})
+                                        }
                                     })
                                 }}
                                 onPressEnter={(e) => {
                                     const {value} = e.target
-                                    this.setState({
-                                        tab4_obj: Object.assign({}, this.state.tab4_obj, {number: value})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab4_obj: Object.assign({}, prevState.tab4_obj, {number: value})
+                                        }
                                     }, () => onSearchButtonClicked(selectedTabKey, this.state.tab4_obj))
                                 }}
                             />
@@ -364,8 +407,10 @@ class _ShippingHeader extends Component {
                                 placeHolder="选择供应商"
                                 options={vendorList}
                                 onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab4_obj: Object.assign({}, this.state.tab4_obj, {vendorName: value})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab4_obj: Object.assign({}, prevState.tab4_obj, {vendorName: value})
+                                        }
                                     })
                                 }}
                             />
@@ -373,32 +418,38 @@ class _ShippingHeader extends Component {
                             <SelectView
                                 key={'tab4_3'}
                                 placeHolder="选择货物状态"
-                                options={goodsStatusMap}
+                                options={orderStatusList}
                                 onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab4_obj: Object.assign({}, this.state.tab4_obj, {goodsStatus: value})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab4_obj: Object.assign({}, prevState.tab4_obj, {status: value})
+                                        }
                                     })
                                 }}
                             />
 
-                            <SelectView
-                                key={'tab4_4'}
-                                placeHolder="选择物料类型"
-                                options={materialTypeMap}
-                                onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab4_obj: Object.assign({}, this.state.tab4_obj, {materialType: value})
-                                    })
-                                }}
-                            />
+                            {/*<SelectView*/}
+                            {/*    key={'tab4_4'}*/}
+                            {/*    placeHolder="选择物料类型"*/}
+                            {/*    options={materialTypeMap}*/}
+                            {/*    onChangeCalled={(value = '') => {*/}
+                            {/*        this.setState((prevState)=>{*/}
+                            {/*            return {*/}
+                            {/*                tab4_obj: Object.assign({}, prevState.tab4_obj, {material: value})*/}
+                            {/*            }*/}
+                            {/*        })*/}
+                            {/*    }}*/}
+                            {/*/>*/}
 
                             <DatePicker
                                 key={'tab4_5'}
                                 style={{marginRight: '6px'}}
                                 placeholder="请选择发货日期"
                                 onChange={(date, dateString)=>{
-                                    this.setState({
-                                        tab4_obj: Object.assign({}, this.state.tab4_obj, {sentTime: dateString})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab4_obj: Object.assign({}, prevState.tab4_obj, {sentTime: dateString})
+                                        }
                                     })
                                 }}
                             />
@@ -408,8 +459,10 @@ class _ShippingHeader extends Component {
                                 style={{marginRight: '6px'}}
                                 placeholder="请选择收货日期"
                                 onChange={(date, dateString)=>{
-                                    this.setState({
-                                        tab4_obj: Object.assign({}, this.state.tab4_obj, {receivedTime: dateString})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab4_obj: Object.assign({}, prevState.tab4_obj, {receivedTime: dateString})
+                                        }
                                     })
                                 }}
                             />
@@ -424,7 +477,7 @@ class _ShippingHeader extends Component {
                 break
 
             // 信息管理-物料类型管理
-            case 'material_type_management':
+            case 'vendor_material_type_management':
                 tableComponent = (
                     <TableControllerView>
                         <TableSearchView>
@@ -432,8 +485,10 @@ class _ShippingHeader extends Component {
                                 key={'tab5_1'}
                                 placeHolder="请输入物料编号或名称"
                                 onSearchCalled={(value = '') => {
-                                    this.setState({
-                                        tab5_obj: Object.assign({}, this.state.tab5_obj, {materialId: value}, {materialName: value})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab5_obj: Object.assign({}, prevState.tab5_obj, {material: value}, {materialDescription: value})
+                                        }
                                     }, () => {
                                         onSearchButtonClicked(selectedTabKey, this.state.tab5_obj)
                                     })
@@ -471,19 +526,24 @@ class _ShippingHeader extends Component {
                                 placeHolder="选择供应商"
                                 options={vendorList}
                                 onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab6_obj: Object.assign({}, this.state.tab6_obj, {vendorName: value})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab6_obj: Object.assign({}, prevState.tab6_obj, {vendorName: value})
+
+                                        }
                                     })
                                 }}
                             />
 
                             <SelectView
                                 key={'tab6_2'}
-                                placeHolder="选择货物状态"
-                                options={goodsStatusMap}
+                                placeHolder="选择物料状态"
+                                options={orderMaterialStatusList}
                                 onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab6_obj: Object.assign({}, this.state.tab6_obj, {goodsStatus: value})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab6_obj: Object.assign({}, prevState.tab6_obj, {status: value})
+                                        }
                                     })
                                 }}
                             />
@@ -493,8 +553,10 @@ class _ShippingHeader extends Component {
                                 placeHolder="选择物料类型"
                                 options={materialTypeMap}
                                 onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab6_obj: Object.assign({}, this.state.tab6_obj, {materialType: value})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab6_obj: Object.assign({}, prevState.tab6_obj, {material: value})
+                                        }
                                     })
                                 }}
                             />
@@ -504,8 +566,10 @@ class _ShippingHeader extends Component {
                                 placeHolder="选择物料描述"
                                 options={materialDescriptionMap}
                                 onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab6_obj: Object.assign({}, this.state.tab6_obj, {materialDescription: value})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab6_obj: Object.assign({}, prevState.tab6_obj, {materialDescription: value})
+                                        }
                                     })
                                 }}
                             />
@@ -515,8 +579,10 @@ class _ShippingHeader extends Component {
                                 placeHolder="选择所属库区"
                                 options={reservoirLibraryList}
                                 onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab6_obj: Object.assign({}, this.state.tab6_obj, {location: value})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab6_obj: Object.assign({}, prevState.tab6_obj, {location: value})
+                                        }
                                     })
                                 }}
                             />
@@ -526,8 +592,10 @@ class _ShippingHeader extends Component {
                                 style={{marginRight: '6px'}}
                                 placeholder="请选择日期"
                                 onChange={(date, dateString)=>{
-                                    this.setState({
-                                        tab6_obj: Object.assign({}, this.state.tab6_obj, {date: dateString})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab6_obj: Object.assign({}, prevState.tab6_obj, {createdAt: dateString})
+                                        }
                                     })
                                 }}
                             />
@@ -550,8 +618,10 @@ class _ShippingHeader extends Component {
                                 placeHolder="选择物料类型"
                                 options={materialTypeMap}
                                 onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab7_obj: Object.assign({}, this.state.tab7_obj, {materialType: value})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab7_obj: Object.assign({}, prevState.tab7_obj, {material: value})
+                                        }
                                     })
                                 }}
                             />
@@ -561,29 +631,35 @@ class _ShippingHeader extends Component {
                                 placeHolder="选择物料描述"
                                 options={materialDescriptionMap}
                                 onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab7_obj: Object.assign({}, this.state.tab7_obj, {materialDescription: value})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab7_obj: Object.assign({}, prevState.tab7_obj, {materialDescription: value})
+                                        }
                                     })
                                 }}
                             />
 
-                            <SelectView
-                                key={'tab7_3'}
-                                placeHolder="选择所属库区"
-                                options={reservoirLibraryList}
-                                onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab7_obj: Object.assign({}, this.state.tab7_obj, {location: value})
-                                    })
-                                }}
-                            />
+                            {/*<SelectView*/}
+                            {/*    key={'tab7_3'}*/}
+                            {/*    placeHolder="选择所属库区"*/}
+                            {/*    options={reservoirLibraryList}*/}
+                            {/*    onChangeCalled={(value = '') => {*/}
+                            {/*        this.setState((prevState)=>{*/}
+                            {/*            return {*/}
+                            {/*                tab7_obj: Object.assign({}, prevState.tab7_obj, {location: value})*/}
+                            {/*            }*/}
+                            {/*        })*/}
+                            {/*    }}*/}
+                            {/*/>*/}
 
                             <DatePicker
                                 style={{marginRight: '6px'}}
                                 placeholder="请选择日期"
                                 onChange={(date, dateString)=>{
-                                    this.setState({
-                                        tab7_obj: Object.assign({}, this.state.tab7_obj, {date: dateString})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab7_obj: Object.assign({}, prevState.tab7_obj, {createdAt: dateString})
+                                        }
                                     })
                                 }}
                             />
@@ -606,8 +682,10 @@ class _ShippingHeader extends Component {
                                 placeHolder="选择供应商"
                                 options={vendorList}
                                 onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab8_obj: Object.assign({}, this.state.tab8_obj, {vendorName: value})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab8_obj: Object.assign({}, prevState.tab8_obj, {vendorName: value})
+                                        }
                                     })
                                 }}
                             />
@@ -615,43 +693,51 @@ class _ShippingHeader extends Component {
                             <SelectView
                                 key={'tab8_2'}
                                 placeHolder="选择货物状态"
-                                options={goodsStatusMap}
+                                options={orderStatusList}
                                 onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab8_obj: Object.assign({}, this.state.tab8_obj, {goodsStatus: value})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab8_obj: Object.assign({}, prevState.tab8_obj, {status: value})
+                                        }
                                     })
                                 }}
                             />
 
-                            <SelectView
-                                key={'tab8_3'}
-                                placeHolder="选择物料类型"
-                                options={materialTypeMap}
-                                onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab8_obj: Object.assign({}, this.state.tab8_obj, {materialType: value})
-                                    })
-                                }}
-                            />
+                            {/*<SelectView*/}
+                            {/*    key={'tab8_3'}*/}
+                            {/*    placeHolder="选择物料类型"*/}
+                            {/*    options={materialTypeMap}*/}
+                            {/*    onChangeCalled={(value = '') => {*/}
+                            {/*        this.setState((prevState)=>{*/}
+                            {/*            return {*/}
+                            {/*                tab8_obj: Object.assign({}, prevState.tab8_obj, {material: value})*/}
+                            {/*            }*/}
+                            {/*        })*/}
+                            {/*    }}*/}
+                            {/*/>*/}
 
-                            <SelectView
-                                key={'tab8_4'}
-                                placeHolder="选择物料描述"
-                                options={materialDescriptionMap}
-                                onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab8_obj: Object.assign({}, this.state.tab8_obj, {materialDescription: value})
-                                    })
-                                }}
-                            />
+                            {/*<SelectView*/}
+                            {/*    key={'tab8_4'}*/}
+                            {/*    placeHolder="选择物料描述"*/}
+                            {/*    options={materialDescriptionMap}*/}
+                            {/*    onChangeCalled={(value = '') => {*/}
+                            {/*        this.setState((prevState)=>{*/}
+                            {/*            return {*/}
+                            {/*                tab8_obj: Object.assign({}, prevState.tab8_obj, {materialDescription: value})*/}
+                            {/*            }*/}
+                            {/*        })*/}
+                            {/*    }}*/}
+                            {/*/>*/}
 
                             <DatePicker
                                 key={'tab8_5'}
                                 style={{marginRight: '6px'}}
                                 placeholder="请选择生成日期"
                                 onChange={(date, dateString)=>{
-                                    this.setState({
-                                        tab8_obj: Object.assign({}, this.state.tab8_obj, {generatedDate: dateString})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab8_obj: Object.assign({}, prevState.tab8_obj, {generatedDate: dateString})
+                                        }
                                     })
                                 }}
                             />
@@ -661,8 +747,10 @@ class _ShippingHeader extends Component {
                                 style={{marginRight: '6px'}}
                                 placeholder="请选择冲销日期"
                                 onChange={(date, dateString)=>{
-                                    this.setState({
-                                        tab8_obj: Object.assign({}, this.state.tab8_obj, {reversedDate: dateString})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab8_obj: Object.assign({}, prevState.tab8_obj, {reversedDate: dateString})
+                                        }
                                     })
                                 }}
                             />
@@ -673,14 +761,18 @@ class _ShippingHeader extends Component {
                                 placeholder="请输入生成号/冲销号"
                                 onChange={(e) => {
                                     const {value} = e.target
-                                    this.setState({
-                                        tab8_obj: Object.assign({}, this.state.tab8_obj, {generatedNumber: value}, {reversedNumber: value})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab8_obj: Object.assign({}, prevState.tab8_obj, {generatedNumber: value}, {reversedNumber: value})
+                                        }
                                     })
                                 }}
                                 onPressEnter={(e) => {
                                     const {value} = e.target
-                                    this.setState({
-                                        tab8_obj: Object.assign({}, this.state.tab8_obj, {generatedNumber: value}, {reversedNumber: value})
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab8_obj: Object.assign({}, prevState.tab8_obj, {generatedNumber: value}, {reversedNumber: value})
+                                        }
                                     }, () => onSearchButtonClicked(selectedTabKey, this.state.tab8_obj))
                                 }}
                             />
@@ -737,7 +829,7 @@ class SelectView extends Component {
         return (
             <Select
                 allowClear={true}
-                style={{width: '160px', marginRight: '6px'}}
+                style={{width: '180px', marginRight: '6px'}}
                 placeholder={placeHolder}
                 onChange={onChangeCalled}
             >

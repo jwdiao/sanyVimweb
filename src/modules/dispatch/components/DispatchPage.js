@@ -70,6 +70,7 @@ class _DispatchPage extends Component {
           onChange={this.handleTabChange}
           tabBarPosition="top"
           renderTab={tab => <span>{tab.title}</span>}
+          prerenderingSiblingsNumber={0}
         >
           {this.renderTabContent()}
         </Tabs>
@@ -77,7 +78,7 @@ class _DispatchPage extends Component {
               this.state.selectedTab === 0 && (
                   <AddButton
                       onClick={()=>{
-                          history.push('/main/add-dispatch')
+                          history.replace('/main/add-dispatch', {from: 'dispatch'})
                       }}
                   >
                       <Icon type={'plus'} style={{color:'white', fontSize:'24px', fontWeight:'bolder'}}/>

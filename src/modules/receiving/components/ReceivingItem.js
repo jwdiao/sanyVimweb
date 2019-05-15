@@ -12,8 +12,8 @@ class _ReceivingItem extends Component {
         const { id } = data
         let keys = _.keys(data)
         const indicatorBarColor = generateRandomColor(rowID)
-        // let index = keys.findIndex(key => key === 'id')
-        //keys.splice(index,1)
+        let index = keys.findIndex(key => key === 'id')
+        keys.splice(index,1)
         return (
             <RootView
                 onClick={()=>{
@@ -23,7 +23,7 @@ class _ReceivingItem extends Component {
                 <IndicatorLeftBar color={indicatorBarColor}/>
                 <ContentView>
                     {
-                        keys.slice(1,keys.length-1).map((_key, index)=>{
+                        keys.slice(0,keys.length-1).map((_key, index)=>{
                             // console.log('_key, index', _key, index)
                             return (
                                 <ItemWrapper
@@ -33,7 +33,7 @@ class _ReceivingItem extends Component {
                                         <ContentContentText>{data[_key]}</ContentContentText>
                                     </ItemView>
                                     {
-                                        index < keys.length-3 && (
+                                        index < keys.length-2 && (
                                             <SeparateLine/>
                                         )
                                     }
@@ -63,8 +63,8 @@ const RootView = styled.div`
     margin:16px;
     justify-content: center;
     align-items: center;
-    border-radius: 2px;
-    box-shadow:0 20px 37px 13px RGBA(229, 233, 243, 1);
+    border-radius: 4px;
+    box-shadow:0 10px 16px 8px RGBA(229, 233, 243, 1);
 `
 
 const IndicatorLeftBar = styled.div`
@@ -116,6 +116,7 @@ const ItemView = styled.div`
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+    color: #333;
 `
 
 const SeparateLine = styled.div`
@@ -124,10 +125,10 @@ const SeparateLine = styled.div`
     border: rgba(216, 215, 215, 1) dashed 0.5px;
 `
 const ContentTitleText = styled.div`
-    color: rgba(54, 53, 53, 1);
+    color: #363535;
     font-size: 14px;
 `
 const ContentContentText = styled.div`
-    color: rgba(51, 51, 51, 1);
+    color: #333;
     font-size: 14px;
 `

@@ -1,5 +1,6 @@
 import React, {Component} from 'react';
-import {shippingMenuItems as menuItems} from "../../../utils";
+import { withRouter } from 'react-router-dom';
+import {shippingMenuItems as menuItems, Durian} from "../../../utils";
 import {Avatar, Button, Icon, Layout, Menu} from "antd";
 import {TableController} from "../../shipping/containers/TableController";
 import styled from "styled-components";
@@ -13,6 +14,7 @@ const SubMenu = Menu.SubMenu;
 class _LookOverPage extends Component {
     constructor(props){
         super(props)
+        this.loginUser = Durian.get('user');
         this.state = {
             collapsed: false,
             selectedTabKey: 'goods_transfer_query'
@@ -26,7 +28,8 @@ class _LookOverPage extends Component {
     }
 
     logout = () => {
-        console.log('logout button clicked!')
+        Durian.clear();
+        this.props.history.push('/');
     }
 
     render() {
@@ -88,10 +91,10 @@ class _LookOverPage extends Component {
                                 <div>{`${selectedMenuItem.parentTitle}-${selectedMenuItem.title}`}</div>
                             </HeaderContainer>
                             <HeaderContainer>
-                                <div style={{fontSize: 18, fontWeight: "normal"}}>username，欢迎您</div>
+                                <div style={{fontSize: 18, fontWeight: "normal"}}>{this.loginUser?this.loginUser.name:''}，欢迎您</div>
                                 <Button
                                     style={{margin:'0 30px 0 20px'}}
-                                    type="primary" icon="logout" size="default">退出</Button>
+                                    type="primary" icon="logout" size="default"  onClick={this.logout}>退出</Button>
                             </HeaderContainer>
                         </StyledHeader>
                         <StyledContent>
@@ -107,7 +110,7 @@ class _LookOverPage extends Component {
     }
 }
 
-export const LookOverPcPage = _LookOverPage
+export const LookOverPcPage = withRouter(_LookOverPage)
 
 const RootView = styled.div`
   height: calc(100vh);

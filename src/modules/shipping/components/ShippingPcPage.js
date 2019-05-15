@@ -1,8 +1,9 @@
 import React, {Component} from 'react';
+import { withRouter } from 'react-router-dom';
 import {Avatar, Button, Icon, Layout, Menu} from "antd";
 import {TableController} from "../containers/TableController";
 import styled from "styled-components";
-import { shippingMenuItems as menuItems } from '../../../utils'
+import { shippingMenuItems as menuItems, Durian } from '../../../utils'
 
 const {
     Header, Sider,
@@ -13,9 +14,10 @@ const SubMenu = Menu.SubMenu;
 class _ShippingPage extends Component {
     constructor(props){
         super(props)
+        this.loginUser = Durian.get('user');
         this.state = {
             collapsed: false,
-            selectedTabKey: 'to_be_shipped_infos'
+            selectedTabKey: 'vendor_material_type_management'
         };
     }
 
@@ -26,7 +28,8 @@ class _ShippingPage extends Component {
     }
 
     logout = () => {
-        console.log('logout button clicked!')
+        Durian.clear();
+        this.props.history.push('/');
     }
 
     render() {
@@ -48,7 +51,7 @@ class _ShippingPage extends Component {
                         <Menu
                             theme="dark"
                             mode="inline"
-                            defaultSelectedKeys={['to_be_shipped_infos']}
+                            defaultSelectedKeys={['vendor_material_type_management']}
                             selectedKeys={[selectedTabKey]}
                         >
                             <SubMenu
@@ -111,10 +114,10 @@ class _ShippingPage extends Component {
                                 <div>{`${selectedMenuItem.parentTitle}-${selectedMenuItem.title}`}</div>
                             </HeaderContainer>
                             <HeaderContainer>
-                                <div style={{fontSize: 18, fontWeight: "normal"}}>username，欢迎您</div>
+                                <div style={{fontSize: 18, fontWeight: "normal"}}>{this.loginUser?this.loginUser.name:''}，欢迎您</div>
                                 <Button
                                     style={{margin:'0 30px 0 20px'}}
-                                    type="primary" icon="logout" size="default">退出</Button>
+                                    type="primary" icon="logout" size="default" onClick={this.logout}>退出</Button>
                             </HeaderContainer>
                         </StyledHeader>
                         <StyledContent>
@@ -130,7 +133,7 @@ class _ShippingPage extends Component {
     }
 }
 
-export const ShippingPcPage = _ShippingPage;
+export const ShippingPcPage = withRouter(_ShippingPage);
 
 const RootView = styled.div`
   height: calc(100vh);

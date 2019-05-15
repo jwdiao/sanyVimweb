@@ -18,8 +18,9 @@ const tabs = [
 class _ReceivingPage extends Component {
   constructor(props) {
     super(props);
+    console.log('props', props);
     this.state = {
-      selectedTab: 0,
+      selectedTab: this.props.location.state?this.props.location.state.tab:0,
       hidden: false,
     };
   }
@@ -46,7 +47,7 @@ class _ReceivingPage extends Component {
         comp = <OtherReceivedList />
         break;
       default:
-        comp = 'default';
+        comp = <ReceivingList />
     }
     return comp;
   }
@@ -69,10 +70,11 @@ class _ReceivingPage extends Component {
 
           }}
           tabs={tabs}
-          initialPage={0}
+          initialPage={this.state.selectedTab}
           onChange={this.handleTabChange}
           tabBarPosition="top"
           renderTab={tab => <span>{tab.title}</span>}
+          prerenderingSiblingsNumber={0}
         >
           {this.renderTabContent()}
         </Tabs>
@@ -80,7 +82,7 @@ class _ReceivingPage extends Component {
               this.state.selectedTab === 2 && (
                   <AddButton
                       onClick={()=>{
-                          history.push('/main/add-receiving')
+                          history.push('/main/add-receiving', {from: 'receive', tab:2})
                       }}
                   >
                       <Icon type={'plus'} style={{color:'white', fontSize:'24px', fontWeight:'bolder'}}/>

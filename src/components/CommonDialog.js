@@ -1,5 +1,4 @@
 import React, {Component} from 'react';
-import {Checkbox} from "antd";
 import {Modal} from "antd-mobile";
 import styled from "styled-components";
 
@@ -104,17 +103,6 @@ const ModalContent = styled.div`
     overflow: scroll;
     // border: 1px green solid;
 `
-
-const NotShowAgainLayout = styled.div`
-    display: flex;
-    width: 100%;
-    height: 30px;
-    justify-content: flex-start;
-    align-items: center;
-    font-weight: bold;
-    // border: 1px blue solid;
-`
-
 const ModalFooter = styled.div`
     display: flex;
     width: 100%;

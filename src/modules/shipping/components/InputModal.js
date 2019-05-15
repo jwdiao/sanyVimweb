@@ -77,7 +77,7 @@ class _InputModal extends Component {
     }
 
     render() {
-        const {modalType, onOkClickedListener, onCancelClickedListener} = this.props
+        const {modalType} = this.props
         const {visible, confirmLoading} = this.state;
 
         return (

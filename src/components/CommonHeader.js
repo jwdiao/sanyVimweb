@@ -1,12 +1,14 @@
 import React, {Component} from "react";
 import {Icon, NavBar, Popover, SearchBar} from "antd-mobile";
 import {withRouter} from 'react-router-dom'
-const Item = Popover.Item;
-const myImg = src => <img src={`https://gw.alipayobjects.com/zos/rmsportal/${src}.svg`} className="am-icon am-icon-xs" alt="" />;
+// const Item = Popover.Item;
+// const myImg = src => <img src={`https://gw.alipayobjects.com/zos/rmsportal/${src}.svg`} className="am-icon am-icon-xs" alt="" />;
 
 class _CommonHeader extends Component{
     constructor(props){
-        super(props)
+        super(props) 
+        this.from = this.props.location.state?this.props.location.state.from:'';
+        console.log('from:', this.from);
         this.state = {
             visible: false,
             selected: '',
@@ -62,11 +64,21 @@ class _CommonHeader extends Component{
                     className="navbar-common-class"
                     mode="dark"
                     leftContent={showBackButton?[
-                        <Icon key="0" type="left" size="lg" />,
+                        <Icon key="0" type="left" size="lg" />,'返回'
                     ]:[]}
                     onLeftClick={(e)=>{
                         if (showBackButton) {
-                            history.goBack()
+                            if (this.from && this.from !== '') {
+                                let { tab } = this.props.location.state;
+                                let params = {selectedTab: this.from};
+                                if (tab) {
+                                    params.tab = tab;
+                                }
+                                history.replace('/main', params)
+                            } else {
+                                history.goBack();
+                            }
+                            
                         }
                     }}
                     rightContent={showMenuButton?

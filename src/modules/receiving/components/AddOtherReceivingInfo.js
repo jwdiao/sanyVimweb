@@ -1,16 +1,14 @@
 import React, {Component} from 'react';
-import {otherReceivedItemsMap} from "../../../utils";
+import {otherReceivedItemsMap, Durian, http, ORDER_STATUS} from "../../../utils";
 import styled from "styled-components";
 import freshId from 'fresh-id'
 
 import {CommonHeader} from "../../../components";
-import {Checkbox, Icon} from "antd";
-import {ListView, Modal, PullToRefresh} from 'antd-mobile'
-import moment from "moment/moment";
+import {Icon} from "antd";
+import {ListView, Toast} from 'antd-mobile'
 import ReactDOM from "react-dom";
-import {ReceivingConfirmItem} from "./ReceivingConfirmItem";
-import {AddOtherReceivingInfoItem} from "./AddOtherReceivingInfoItem";
 import {withRouter} from "react-router-dom";
+import {AddOtherReceivingInfoItem} from "./AddOtherReceivingInfoItem";
 
 const _ = require('lodash')
 
@@ -31,96 +29,116 @@ class _AddOtherReceivingInfo extends Component {
 
             data: {
                 titleContents: {
-                    number: 'WU-001',
-                    vmiFactory: '供应商工厂-1',
-                    inventoryState: '供应商发货',
+                    // number: 'WU-001',
+                    vmiFactory: '',
+                    inventoryState: '',
                 },
 
-                materials:[{
-                    material: '物料1',
-                    materialDescription:'物料描述1',
-                    quantity:'1',
-                    inventoryPosition:'合格品库',
-                    inInventoryTime:moment().format('YYYY-MM-DD HH:mm:ss'),
-                    reason:'原因1'
-                },{
-                    material: '物料2',
-                    materialDescription:'物料描述2',
-                    quantity:'2',
-                    inventoryPosition:'合格品库',
-                    inInventoryTime:moment().format('YYYY-MM-DD HH:mm:ss'),
-                    reason:'原因2'
-                },{
-                    material: '物料3',
-                    materialDescription:'物料描述3',
-                    quantity:'3',
-                    inventoryPosition:'合格品库',
-                    inInventoryTime:moment().format('YYYY-MM-DD HH:mm:ss'),
-                    reason:'原因3'
-                },{
-                    material: '物料4',
-                    materialDescription:'物料描述4',
-                    quantity:'4',
-                    inventoryPosition:'合格品库',
-                    inInventoryTime:moment().format('YYYY-MM-DD HH:mm:ss'),
-                    reason:'原因4'
-                },{
-                    material: '物料5',
-                    materialDescription:'物料描述5',
-                    quantity:'5',
-                    inventoryPosition:'合格品库',
-                    inInventoryTime:moment().format('YYYY-MM-DD HH:mm:ss'),
-                    reason:'原因5'
-                },{
-                    material: '物料6',
-                    materialDescription:'物料描述6',
-                    quantity:'6',
-                    inventoryPosition:'合格品库',
-                    inInventoryTime:moment().format('YYYY-MM-DD HH:mm:ss'),
-                    reason:'原因6'
-                },{
-                    material: '物料7',
-                    materialDescription:'物料描述7',
-                    quantity:'7',
-                    inventoryPosition:'合格品库',
-                    inInventoryTime:moment().format('YYYY-MM-DD HH:mm:ss'),
-                    reason:'原因7'
-                },{
-                    material: '物料8',
-                    materialDescription:'物料描述8',
-                    quantity:'8',
-                    inventoryPosition:'合格品库',
-                    inInventoryTime:moment().format('YYYY-MM-DD HH:mm:ss'),
-                    reason:'原因8'
-                }],
+                // materials:[{
+                //     material: '物料1',
+                //     materialDescription:'物料描述1',
+                //     quantity:'1',
+                //     inventoryPosition:'合格品库',
+                //     inInventoryTime:moment().format('YYYY-MM-DD HH:mm:ss'),
+                //     reason:'原因1'
+                // },{
+                //     material: '物料2',
+                //     materialDescription:'物料描述2',
+                //     quantity:'2',
+                //     inventoryPosition:'合格品库',
+                //     inInventoryTime:moment().format('YYYY-MM-DD HH:mm:ss'),
+                //     reason:'原因2'
+                // },{
+                //     material: '物料3',
+                //     materialDescription:'物料描述3',
+                //     quantity:'3',
+                //     inventoryPosition:'合格品库',
+                //     inInventoryTime:moment().format('YYYY-MM-DD HH:mm:ss'),
+                //     reason:'原因3'
+                // },{
+                //     material: '物料4',
+                //     materialDescription:'物料描述4',
+                //     quantity:'4',
+                //     inventoryPosition:'合格品库',
+                //     inInventoryTime:moment().format('YYYY-MM-DD HH:mm:ss'),
+                //     reason:'原因4'
+                // },{
+                //     material: '物料5',
+                //     materialDescription:'物料描述5',
+                //     quantity:'5',
+                //     inventoryPosition:'合格品库',
+                //     inInventoryTime:moment().format('YYYY-MM-DD HH:mm:ss'),
+                //     reason:'原因5'
+                // },{
+                //     material: '物料6',
+                //     materialDescription:'物料描述6',
+                //     quantity:'6',
+                //     inventoryPosition:'合格品库',
+                //     inInventoryTime:moment().format('YYYY-MM-DD HH:mm:ss'),
+                //     reason:'原因6'
+                // },{
+                //     material: '物料7',
+                //     materialDescription:'物料描述7',
+                //     quantity:'7',
+                //     inventoryPosition:'合格品库',
+                //     inInventoryTime:moment().format('YYYY-MM-DD HH:mm:ss'),
+                //     reason:'原因7'
+                // },{
+                //     material: '物料8',
+                //     materialDescription:'物料描述8',
+                //     quantity:'8',
+                //     inventoryPosition:'合格品库',
+                //     inInventoryTime:moment().format('YYYY-MM-DD HH:mm:ss'),
+                //     reason:'原因8'
+                // }],
 
-               //  materials:[],
+                materials:[],
             }
         }
     }
 
     componentWillMount() {
-        const {data} = this.props
-        if (data) {
-            const {number, vmiFactory, inventoryState} = data
-            this.setState((prevState) => {
-                return {
-                    titleContents: Object.assign({}, prevState.titleContents, {number}, {vmiFactory}, {inventoryState})
-                }
-            })
+        // const {data} = this.props
+        // if (data) {
+        //     const {number, vmiFactory, inventoryState} = data
+        //     this.setState((prevState) => {
+        //         return {
+        //             titleContents: Object.assign({}, prevState.titleContents, {number}, {vmiFactory}, {inventoryState})
+        //         }
+        //     })
+        // }
+        const user = Durian.get('user');
+        const vendor = user.vendor;
+        let { materials } = this.props.location.state || [];
+        if (!materials) {
+            materials = [];
         }
+        materials = materials.map((_data) => {
+            let rid = freshId();
+            return {
+                id: {label:rid, value:rid},
+                ..._data
+            }
+        })
+        this.setState((prevState) => {
+            return {
+                data: {
+                    titleContents: Object.assign({}, prevState.titleContents, /* {number}, */ {vmiFactory: vendor.label}, {inventoryState: ORDER_STATUS[5]}),
+                    materials: materials
+                }
+            }
+        })
     }
 
     async componentDidMount() {
-        //const {itemData} = this.props.router.location.state
-        //const {materials} = itemData
-        const {materials} = this.state.data
-
+        let {materials} = this.state.data
         if (materials.length === 0) return
         const hei = document.documentElement.clientHeight - ReactDOM.findDOMNode(this.lv).parentNode.offsetTop;
-
-        this.rData = materials.map((_data) => ({id: freshId(), ..._data})) //retrieving data from server;
-        console.log(this.rData)
+        this.rData = materials.map(m => {
+            let newMat = {};
+            _.keys(m).map(k => Object.assign(newMat, {[k]: m[k].label}));
+            return newMat;
+        });
         this.setState({
             dataSource: this.state.dataSource.cloneWithRows(this.rData),
             height: hei,
@@ -137,12 +155,72 @@ class _AddOtherReceivingInfo extends Component {
         }
     }
 
+    handleItemDelete(material) {
+        let { materials } = this.state.data;
+        _.remove(materials, m => m.id.value === material.id);
+        this.rData = materials.map(m => {
+            let newMat = {};
+            _.keys(m).map(k => Object.assign(newMat, {[k]: m[k].label}));
+            return newMat;
+        });
+        this.setState((prevState) => {
+            return {
+                dataSource: this.state.dataSource.cloneWithRows(this.rData),
+                data: {
+                    titleContents: Object.assign({}, prevState.data.titleContents),
+                    materials: materials
+                }
+            }
+        }, () => {
+        })
+       
+    }
+
+    handleItemEdit(material) {
+        let { materials } = this.state.data;
+        this.props.history.push('/main/add-receiving/detail', {materials: materials, material: _.find(materials, m => m.id.value === material.id)})
+    }
+
+    saveOtherOrder = () => {
+        const { data } = this.state;
+        const { materials } = data;
+        const user = Durian.get('user');
+        const vendor = user.vendor;
+
+        let materialList = materials.map( m => {
+            return {
+                materiaCode: m.material.value, 
+                materiaName: m.material.label,
+                wareHouseType: m.inventoryPosition.value,
+                materiaNum: m.quantity.value, 
+                totalNumber: m.quantity.value,
+                qualifiedNumber: m.inventoryPosition.value===1?m.quantity.value:0, 
+                badNumber:m.inventoryPosition.value===2?m.quantity.value:0,
+                reason: m.reason.label,//不传值，传文本 
+            }
+        });
+        let params = {
+            supplierCode: vendor.value,
+            materialList
+        };
+        console.log('other order save params:', params);
+        http.post('/order/save/other', params)
+            .then(result => {
+                console.log(result);
+                if (result.ret === '200' && result.msg === '成功') {
+                    this.props.history.goBack()
+                }
+            })
+            .catch(error => {
+                Toast.fail(error.msg, 1);
+                console.error(`Error from server:${error.msg}`);
+            });
+    }
+    
     render() {
-        const {data, dataSource} = this.state
+        const {data} = this.state
         const {titleContents, materials} = data
         let keys = _.keys(titleContents)
-
-        console.log('dataSource', dataSource)
 
         //这里就是个渲染数据，rowData就是每次过来的那一批数据，已经自动给你遍历好了，rouID可以作为key值使用，直接渲染数据即可
         const row = (rowData, sectionID, rowID) => {
@@ -150,6 +228,8 @@ class _AddOtherReceivingInfo extends Component {
                 <AddOtherReceivingInfoItem
                     rowID={rowID}
                     data={rowData}
+                    onDelete={(material) => this.handleItemDelete(material)}
+                    onEdit={(material) => this.handleItemEdit(material)}
                     // indicatorBarColor={indicatorBarColor}
                     // onReceivingButtonClicked={this.onReceivingButtonClicked}
                 />
@@ -201,19 +281,9 @@ class _AddOtherReceivingInfo extends Component {
                         }
                     </HeaderView>
 
-                    <div
-                        style={{
-                            display: 'flex',
-                            flex: 1,
-                            flexDirection: 'column',
-                            height:'20vh',
-                            width:'100%',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            borderBottom:'2px RGBA(241, 241, 242, 1) solid'
-                        }}
+                    <AddNewItemPanel 
                         onClick={()=>{
-                            this.props.history.push('/main/add-receiving/detail')
+                            this.props.history.push('/main/add-receiving/detail', {materials: materials})
                         }}
                     >
                         <Icon type={'plus'} style={{
@@ -221,7 +291,7 @@ class _AddOtherReceivingInfo extends Component {
                             fontSize: '40px',
                             fontWeight: 'lighter'
                         }}/>
-                    </div>
+                    </AddNewItemPanel>
 
                     {
                         materials.length > 0 && (
@@ -232,19 +302,19 @@ class _AddOtherReceivingInfo extends Component {
                             renderRow={row}   //渲染你上边写好的那个row
                             renderSeparator={separator}
                             useBodyScroll={this.state.useBodyScroll}
+                            height={this.state.height}
                             style={this.state.useBodyScroll ? {} : {
                                 height: this.state.height,
                                 // border: 'yellow 1px solid',
                                 width: '100%',
+                                paddingBottom: '10px',
                             }}
                         />)
                     }
                 </RootContentView>
                 {
                     materials.length > 0 && (
-                        <FootView onClick={()=>{
-
-                        }}>
+                        <FootView onClick={this.saveOtherOrder}>
                             提交
                         </FootView>
                     )
@@ -270,8 +340,8 @@ const RootContentView = styled.div`
     margin:16px;
     justify-content: center;
     align-items: center;
-    border-radius: 2px;
-    box-shadow:0 20px 37px 13px RGBA(229, 233, 243, 1);
+    border-radius: 4px;
+    box-shadow:0 10px 16px 8px RGBA(229, 233, 243, 1);
    //  border: 2px black solid;
 `
 const IndicatorBar = styled.div`
@@ -285,14 +355,13 @@ const IndicatorBar = styled.div`
 `
 const HeaderView = styled.div`
     display: flex;
-    height: 20vh;
     flex-direction: column;
     z-index: 100;
     width: 100%;
-    padding: 10px;
+    height:100px;
+    padding: 10px 20px;
     justify-content: center;
-    // border: 2px brown solid;
-    box-shadow:0 0 30px 0 RGBA(229, 233, 243, 1) inset;
+    box-shadow: inset 0 -15px 24px -15px #d4ddf5;
 `
 const FootView = styled.div`
     display: flex;
@@ -323,3 +392,17 @@ const HeaderContentText = styled.div`
     color: rgba(160, 157, 157, 1);
     font-size: 14px;
 `
+const AddNewItemPanel = styled.div`
+    display: flex;
+    flex-direction: column;
+    height: 90px;
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    padding-bottom:16px;
+    box-shadow: inset 0 -15px 24px -15px #d4ddf5;
+`
+
+
+
+

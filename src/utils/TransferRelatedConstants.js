@@ -1,7 +1,7 @@
 export const transferItemsMap = {
     number: '号码',
     vmiFactory: 'VMI工厂',
-    inventoryState: '货物状态',
+    inventoryState: '状态',
 
     material:'物料',
     materialDescription:'物料描述',

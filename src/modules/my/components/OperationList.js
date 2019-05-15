@@ -1,19 +1,24 @@
 import React, { Component } from 'react';
 import styled from "styled-components";
-import { WhiteSpace } from 'antd-mobile';
 
 class OperationList extends Component {
 
     render() {
-        const data = this.props.data;
+        const {width, data, onClickListener} = this.props
         return (
-            <OpList width={this.props.width}>
+            <OpList width={width}>
                 {
-                    this.props.data.map(item => (
-                        <OpItem key={item.key}>
+                    data.map(item => (
+                        <OpItem key={item.key}
+                                onClick={()=>onClickListener({itemKey: item.key})}
+                        >
                             <OpLeft>
                                 {item.icon}
-                                <span style={{ marginLeft: '1rem', fontSize: '1.2rem' }}>{item.text}</span>
+                                <span style={{ 
+                                    marginLeft: '1rem', 
+                                    fontSize: '1rem' 
+                                    }}
+                                >{item.text}</span>
                             </OpLeft>
                             <OpRight><Gt /></OpRight>
                         </OpItem>
@@ -43,11 +48,11 @@ const OpRight = styled.div`
     padding-right:1rem;
 `
 const Gt = styled.div`
-    width: 1rem;
-    height: 1rem;
+    width: 0.6rem;
+    height: 0.6rem;
     position: absolute;
-    border-left: 1px solid #999;
-    border-bottom: 1px solid #999;
+    border-left: 1px solid #D1D1D1;
+    border-bottom: 1px solid #D1D1D1;
     -webkit-transform: translate(0,-50%) rotate(-135deg);
     transform: translate(0,-50%) rotate(-135deg);
 `

@@ -1,9 +1,9 @@
 import React, {Component} from 'react';
 import {
-    validStateMap,
-    vendorList
+    http,
+    validStateList,
 } from "../../../utils";
-import {Button, DatePicker, Icon, Input, Select} from "antd";
+import {Button, Input, Select, Upload} from "antd";
 import styled from "styled-components";
 
 const Search = Input.Search;
@@ -30,28 +30,54 @@ class _AdminHeader extends Component {
                 vendor: '',
                 status: '',
             },
+
+            vendorList:[],
         }
+    }
+
+    async componentDidMount() {
+        let params = {
+            page: 1,
+            pageSize:10,
+        }
+        let requestUrl = '/supplier/supplierList'
+        const result = await http.post(requestUrl,params)
+        const {data: _data} = result
+        let originalContent =  _data.content
+        this.setState((prevState)=>{
+            return {
+                vendorList: originalContent.map(content=>{
+                    return {
+                        key: content.id,
+                        value: content.name,
+                        label: content.name
+                    }
+                })
+            }
+        })
     }
 
     render() {
         const {
             selectedTabKey,// 当前选择的Tab页
 
+            uploadProps,
             onSearchButtonClicked,
             onAddButtonClicked,
 
-            editState
+            onBatchImportButtonClicked
+
         } = this.props
 
+        console.log('this')
+
         const {
-            tab1_obj,
-            tab2_obj,
             tab3_obj,
+            vendorList
         } = this.state
 
         let tableComponent
         switch (selectedTabKey) {
-            // 信息管理-待发货信息
             case 'sany_factory':
                 tableComponent = (
                     <TableControllerView>
@@ -60,8 +86,10 @@ class _AdminHeader extends Component {
                                 key={'tab1_1'}
                                 placeHolder="请输入SANY工厂编号或名称"
                                 onSearchCalled={(value = '') => {
-                                    this.setState({
-                                        tab1_obj: Object.assign({}, this.state.tab1_obj, {sanyId: value}, {sanyName: value})
+                                    this.setState((prevState) => {
+                                        return {
+                                            tab1_obj: Object.assign({}, prevState.tab1_obj, {sanyId: value}, {sanyName: value})
+                                        }
                                     }, () => {
                                         onSearchButtonClicked(selectedTabKey, this.state.tab1_obj)
                                     })
@@ -86,10 +114,12 @@ class _AdminHeader extends Component {
                         <TableSearchView>
                             <SearchView
                                 key={'tab2_1'}
-                                placeHolder="请输入供应商工厂编号或名称"
+                                placeHolder="请输入供应商编号或名称"
                                 onSearchCalled={(value = '') => {
-                                    this.setState({
-                                        tab2_obj: Object.assign({}, this.state.tab2_obj, {vendorId: value}, {vendorName: value})
+                                    this.setState((prevState) => {
+                                        return {
+                                            tab2_obj: Object.assign({}, prevState.tab2_obj, {vendorId: value}, {vendorName: value})
+                                        }
                                     }, () => {
                                         onSearchButtonClicked(selectedTabKey, this.state.tab2_obj)
                                     })
@@ -117,8 +147,10 @@ class _AdminHeader extends Component {
                                 placeHolder="选择供应商"
                                 options={vendorList}
                                 onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab3_obj: Object.assign({}, this.state.tab3_obj, {vendor: value})
+                                    this.setState((prevState) => {
+                                        return {
+                                            tab3_obj: Object.assign({}, prevState.tab3_obj, {vendor: value})
+                                        }
                                     })
                                 }}
                             />
@@ -126,10 +158,20 @@ class _AdminHeader extends Component {
                             <SelectView
                                 key={'tab3_2'}
                                 placeHolder="选择状态"
-                                options={validStateMap}
+                                options={validStateList}
                                 onChangeCalled={(value = '') => {
-                                    this.setState({
-                                        tab3_obj: Object.assign({}, this.state.tab3_obj, {status: value})
+                                    this.setState((prevState) => {
+                                        return {
+                                            tab3_obj:
+                                                Object.assign(
+                                                    {},
+                                                    prevState.tab3_obj,
+                                                    {status:
+                                                        value !== ''
+                                                            ? validStateList.filter(state=>state.value === value)[0].value
+                                                            : ''
+                                                    })
+                                        }
                                     })
                                 }}
                             />
@@ -140,14 +182,18 @@ class _AdminHeader extends Component {
                                 placeholder="请输入用户名/姓名/手机号"
                                 onChange={(e) => {
                                     const {value} = e.target
-                                    this.setState({
-                                        tab3_obj: Object.assign({}, this.state.tab3_obj, {userName: value}, {name: value}, {mobile: value})
+                                    this.setState((prevState) => {
+                                        return {
+                                            tab3_obj: Object.assign({}, prevState.tab3_obj, {userName: value}, {name: value}, {mobile: value})
+                                        }
                                     })
                                 }}
                                 onPressEnter={(e) => {
                                     const {value} = e.target
-                                    this.setState({
-                                        tab3_obj: Object.assign({}, this.state.tab3_obj, {userName: value}, {name: value}, {mobile: value})
+                                    this.setState((prevState) => {
+                                        return {
+                                            tab3_obj: Object.assign({}, prevState.tab3_obj, {userName: value}, {name: value}, {mobile: value})
+                                        }
                                     }, () => onSearchButtonClicked(selectedTabKey, this.state.tab3_obj))
                                 }}
                             />
@@ -167,6 +213,46 @@ class _AdminHeader extends Component {
                     </TableControllerView>
                 )
                 break
+
+            case 'basic_material_type_management':
+                tableComponent = (
+                    <TableControllerView>
+                        <TableSearchView>
+                            <SearchView
+                                key={'tab4_1'}
+                                placeHolder="请输入物料编号或名称"
+                                onSearchCalled={(value = '') => {
+                                    this.setState((prevState)=>{
+                                        return {
+                                            tab4_obj: Object.assign({}, prevState.tab4_obj, {material: value}, {materialDescription: value})
+                                        }
+                                    }, () => {
+                                        onSearchButtonClicked(selectedTabKey, this.state.tab4_obj)
+                                    })
+                                }}
+                            />
+                        </TableSearchView>
+
+                        <TableButtonsView>
+                            <Upload {...uploadProps}
+                                    style={{marginRight: '6px'}}
+                            >
+                                <Button
+                                    type="primary"
+                                    icon="import"
+                                    onClick={() => onBatchImportButtonClicked(selectedTabKey)}
+                                >批量导入</Button>
+                            </Upload>
+                            <Button
+                                type="primary"
+                                style={{marginRight: '6px'}}
+                                onClick={() => onAddButtonClicked()}
+                            >新增</Button>
+                        </TableButtonsView>
+                    </TableControllerView>
+                )
+                break
+
             default:
                 tableComponent = null
         }

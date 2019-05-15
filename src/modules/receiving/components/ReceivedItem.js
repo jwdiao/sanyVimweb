@@ -1,72 +1,144 @@
 import React, {Component} from 'react';
 import styled from "styled-components";
 import freshId from 'fresh-id'
-import {receivedItemsMap, generateRandomColor} from "../../../utils";
+import {receivedItemsMap, generateRandomColor, http} from "../../../utils";
+import {Collapse} from "antd";
+
+const Panel = Collapse.Panel;
 
 const _ = require('lodash')
 
+function callback(key) {
+    console.log(key);
+}
+
 class _ReceivedItem extends Component {
+
+    constructor (props) {
+        super(props);
+        this.state = ({
+            materials:[]
+        });
+    }
+
+    async componentWillMount () {
+        const { data } = this.props
+        const {number: code, sentTime, sender } = data
+        // console.log('----------------data----------------------------',data);
+        // console.log(code);
+        // console.log('---------------------code-----------------------',code);
+        const dbMat = await http.get(`/orderMaterial/find/ordercode/${code}`);
+        let mats = dbMat.data.map(m => {
+            return {
+                material: m.materiaCode,
+                materialDescription: m.materiaName,
+                quantity:m.totalNumber,
+                sentTime,
+                sender,
+                inInventoryQuantity:m.qualifiedNumber,
+                qualifiedQuantity:m.qualifiedNumber,
+            }
+        });
+        this.setState({
+            materials: mats
+        })
+    }
 
     render() {
         const { data, rowID } = this.props
-        const { id, materials } = data
+        const { id } = data
         let keys = _.keys(data)
         let index = keys.findIndex(key => key === 'id')
         keys.splice(index,1)
         return (
             <RootView>
                 <IndicatorLeftBar color={generateRandomColor(rowID)}/>
-                <HeaderView>
-                    {
-                        keys.slice(0,3).map((_key, index)=>{
-                            // console.log('_key, index', _key, index)
-                            return (
-                                <ItemWrapper
-                                    key={_key}
-                                    style={{flexDirection:'row'}}>
-                                    <ItemView>
-                                        <TitleText style={{display:'flex', flex:0.3, textAlign:'justify'}}>{receivedItemsMap[_key]}</TitleText>
-                                        <HeaderContentText style={{display:'flex', flex:0.7}}>{data[_key]}</HeaderContentText>
-                                    </ItemView>
-                                </ItemWrapper>
 
-                            )
-                        })
+                <Collapse
+                    accordion
+                    className="collapse-common-class"
+                    bordered={false}
+                    onChange={callback}
+                    expandIcon={ (panelProps) => {
+                        return (
+                            <ExpandIcon>
+                                <ExpandIconItem></ExpandIconItem>
+                                <ExpandIconItem></ExpandIconItem>
+                                <ExpandIconItem></ExpandIconItem>
+                            </ExpandIcon>
+                        )
+                        }
                     }
-                </HeaderView>
-                <ContentView>
-                    {
-                        materials.map((material)=>{
-                            // console.log('_key, index', _key, index)
-                            let _keys = _.keys(material)
-                            return (
-                                <div
-                                    key={freshId()}
-                                    style={{display:'flex', flex:1, flexDirection:'column', justifyContent:'center', borderBottom:'1px rgba(216, 215, 215, 1) solid', padding:'10px'}}>
-                                    {
-                                        _keys.map((key,index)=>{
-                                            return (
-                                                <ItemWrapper
-                                                    key={key}>
-                                                    <ItemView>
-                                                        <TitleText>{receivedItemsMap[key]}</TitleText>
-                                                        <ContentContentText>{material[key]}</ContentContentText>
-                                                    </ItemView>
-                                                    {
-                                                        index < _keys.length-1 && (
-                                                            <SeparateLine/>
-                                                        )
-                                                    }
-                                                </ItemWrapper>
+                    style={{
+                        width:'100%', 
+                    }}
+                >
+                    <Panel
+                        header={
+                            <HeaderView>
+                                {
+                                    keys.slice(0,3).map((_key, index)=>{
+                                        // console.log('_key, index', _key, index)
+                                        return (
+                                            <ItemWrapper
+                                                key={_key}
+                                                style={{flexDirection:'row'}}>
+                                                <ItemView>
+                                                    <TitleText style={{display:'flex', flex:0.3, textAlign:'justify'}}>{receivedItemsMap[_key]}</TitleText>
+                                                    <HeaderContentText style={{display:'flex', flex:0.7}}>{data[_key]}</HeaderContentText>
+                                                </ItemView>
+                                            </ItemWrapper>
 
-                                            )
-                                        })
+                                        )
+                                    })
+                                }
+                            </HeaderView>
+                        }
+                        key="1"
+                        showArrow={true}
+                    >
+                        <ContentView>
+                            {
+                                this.state.materials.map((material, mIndex)=>{
+                                    // console.log('_key, index', _key, index)
+                                    let _keys = _.keys(material)
+                                    let itemStyle = {
+                                        display:'flex', 
+                                        flex:1, 
+                                        flexDirection:'column', 
+                                        justifyContent:'center', 
+                                        padding:'10px 26px 26px'
                                     }
-                                </div>
-                            )
-                        })
-                    }
-                </ContentView>
+                                    if (mIndex !== this.state.materials.length-1) {
+                                        itemStyle.borderBottom = '1px rgba(216, 215, 215, 1) solid';
+                                    }
+                                    return (
+                                        <div
+                                            key={freshId()}
+                                            style={itemStyle}
+                                        >
+                                            {
+                                                _keys.map((key,index)=>{
+                                                    return (
+                                                        <ItemWrapper
+                                                            key={key}>
+                                                            <ItemView>
+                                                                <TitleText>{receivedItemsMap[key]}</TitleText>
+                                                                <ContentContentText>{material[key]}</ContentContentText>
+                                                            </ItemView>
+                                                            <SeparateLine/>
+                                                        </ItemWrapper>
+
+                                                    )
+                                                })
+                                            }
+                                        </div>
+                                    )
+                                })
+                            }
+                        </ContentView>
+                    </Panel>
+                </Collapse>
             </RootView>
         );
     }
@@ -83,9 +155,20 @@ const RootView = styled.div`
     margin:16px 16px -3px 16px;
     justify-content: center;
     align-items: center;
-    border-radius: 2px;
-    box-shadow:0 20px 37px 13px RGBA(229, 233, 243, 1);
-    border-bottom: 6px dotted RGBA(229, 233, 243, 1);
+    border-radius: 4px;
+    position:relative;
+    overflow:hidden;
+    padding-bottom:16px;
+    ::before {
+        content: ' ';
+        width: 100%;
+        height: 0;
+        position: absolute;
+        bottom: -4px;
+        border-bottom: 8px dotted #eee;
+        left: 4px;
+        right: 4px;
+    }
 `
 
 const IndicatorLeftBar = styled.div`
@@ -104,12 +187,9 @@ const HeaderView = styled.div`
     flex-direction: column;
     z-index: 100;
     width: 100%;
-    height: 96px;
-    padding: 10px;
+    height: 110px;
+    padding: 10px 0;
     justify-content: center;
-    // border: 1px red solid;
-    box-shadow:0 0 30px 0 RGBA(229, 233, 243, 1) inset;
-
 `
 
 const ContentView = styled.div`
@@ -117,11 +197,7 @@ const ContentView = styled.div`
     flex-direction: column;
     z-index: 1;
     width: 100%;
-    // height: 226px;
-    // padding: 10px 0;
     justify-content: center;
-    border-top: 1px rgba(216, 215, 215, 1) solid;
-    // box-shadow:15px 0px 37px 13px RGBA(229, 233, 243, 1);
 `
 
 const ItemWrapper = styled.div`
@@ -137,6 +213,7 @@ const ItemView = styled.div`
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+    padding:5px 0;
 `
 
 const SeparateLine = styled.div`
@@ -158,4 +235,11 @@ const ContentContentText = styled.div`
 const HeaderContentText = styled.div`
     color: rgba(160, 157, 157, 1);
     font-size: 14px;
+`
+const ExpandIcon = styled.div`
+    width:16px;
+`
+const ExpandIconItem = styled.div`
+    height:3px;
+    border-top:1px solid #bbb;
 `

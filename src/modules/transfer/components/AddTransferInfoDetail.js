@@ -5,13 +5,13 @@ import {
     InputItem,
     WhiteSpace
 } from 'antd-mobile';
-
+import moment from "moment/moment";
 import {
     Button
 } from 'antd'
 import { CommonHeader, ExPicker } from "../../../components";
 import {CommonDialog} from "../../../components/CommonDialog";
-import {materialDescriptionMap, materialTypeMap, reservoirLibraryList} from "../../../utils";
+import {http, Durian, transferItemsMap, reservoirLibraryList} from "../../../utils";
 
 const isIPhone = new RegExp('\\biPhone\\b|\\biPod\\b', 'i').test(window.navigator.userAgent);
 let moneyKeyboardWrapProps;
@@ -21,24 +21,77 @@ if (isIPhone) {
     };
 }
 
+const _ = require('lodash')
+
 class _SelectTransferItem extends Component {
 
     constructor(props) {
         super(props);
+        this.materials = this.props.location.state.materials || [];
+        this.material = this.props.location.state.material || {};
         this.state = {
             inInventoryQuantity:0,
             pickerValue: [],
-            dataSet:{},
+            reasons:[], //原因元数据
+            materials:[], //物料元数据
+            dataSet: {},
+            result: {},
             showModal: false,
         }
     }
 
-    onPickerOk = (val, type) => {
-        console.log(`value from children ${val} ${type}`);
+    async componentWillMount () {
+        console.log('material to be edit:', this.material);
+        // 初始化数据集和结果集
+        if (this.material && this.material.id) {
+            let pmat = Object.assign({}, this.material);
+            pmat = _.omit(pmat, ['id'])
+            console.log('pmat', pmat);
+            let defaultDataset = {};
+            _.keys(pmat).map(k => Object.assign(defaultDataset, {[transferItemsMap[k]]: pmat[k].label}))
+            console.log('defaultDataset', defaultDataset);
+            this.setState({
+                dataSet: defaultDataset,
+                result:this.material
+            })
+        }
+        let type = 'reason';
+        const dbReasons = await http.get(`/dynamicProperty/find/type/${type}`);
+        if (dbReasons && dbReasons.data && dbReasons.data.length > 0) {
+            let reasons = dbReasons.data.filter(m => m.status === 1).map(m => {
+                return {
+                    label:m.name,
+                    value:m.code
+                }
+            }) ;
+            this.setState({
+                reasons:reasons
+            });
+        }
+        const user = Durian.get('user');
+        const supplierCode = user.vendor.value;
+        let params = { supplierCode: supplierCode };
+        const dbMat = await http.post('/factorySupplierMaterial/find/all', params);
+        if (dbMat && dbMat.data && dbMat.data.content) {
+            let materials = dbMat.data.content.map(i => {
+              return {
+                label: i.materialName,
+                value: i.materialCode
+              }
+            });
+            this.setState({
+                materials: materials
+            })
+        }
+    }
+
+    onPickerOk = (kv, type) => {
+        console.log(`value from children ${kv.label} ${type}`);
         this.setState((prevState) => {
             return {
-                pickerValue: val,
-                dataSet: Object.assign({},prevState.dataSet, {[type]:val[0]})
+                pickerValue: [kv.value],
+                dataSet: Object.assign({},prevState.dataSet, {[transferItemsMap[type]]:kv.label}), 
+                result: Object.assign({},prevState.result, {[type]:kv})
             }
         });
     };
@@ -60,10 +113,12 @@ class _SelectTransferItem extends Component {
     }
 
     onBtn2Clicked = () => {
+        this.material.id && _.remove(this.materials, m => m.id.value === this.material.id.value);
+        this.materials.push(Object.assign({}, this.state.result, /* {inInventoryTime:moment().format('YYYY-MM-DD HH:mm:ss')} */));
         this.setState({
             showModal: false
         }, ()=>{
-            this.props.history.replace('/main/add-transfer', {});
+            this.props.history.replace('/main/add-transfer', {materials:this.materials});
         })
     }
 
@@ -71,6 +126,10 @@ class _SelectTransferItem extends Component {
         this.setState({
             showModal: false
         })
+    }
+
+    fromVal = (list, val) => {
+        return _.find(list, i => i.value === val[0]);
     }
 
     render() {
@@ -82,10 +141,11 @@ class _SelectTransferItem extends Component {
                 <CommonHeader navBarTitle="选择移库信息" showBackButton={true} />
                 <WhiteSpace size='lg' />
                 <ExPicker
-                    data={materialTypeMap}
-                    selectedFirst={true}
+                    data={this.state.materials}
+                    selectedFirst={false}
+                    val={this.material.material ? this.material.material.value:''}
                     cols={1}
-                    onOk={(val)=>this.onPickerOk(val, '物料')}
+                    onOk={(val)=>this.onPickerOk(this.fromVal(this.state.materials, val), 'material')}
                     pickerStyle={{
                         borderBottom:'1px solid #eee',
                     }}
@@ -104,7 +164,7 @@ class _SelectTransferItem extends Component {
                         color: '#303030'
                     }}
                 />
-                <ExPicker
+                {/* <ExPicker
                     data={materialDescriptionMap}
                     selectedFirst={true}
                     cols={1}
@@ -126,18 +186,20 @@ class _SelectTransferItem extends Component {
                     extraStyle={{
                         color: '#303030'
                     }}
-                />
+                /> */}
                 <ItemView>
                     <ContentTitleText>数量</ContentTitleText>
                     <InputNumber
                         className={'input-style'}
                         placeholder="请输入数字"
                         type="money"
+                        defaultValue={this.material.quantity ? this.material.quantity.value:''.value}
                         onChange={(v)=>{
                             this.setState((prevState) => {
                                 return {
                                     inInventoryQuantity: v,
-                                    dataSet: Object.assign({},prevState.dataSet, {'数量':v})
+                                    dataSet: Object.assign({},prevState.dataSet, {[transferItemsMap.quantity]:v}),
+                                    result: Object.assign({},prevState.result, {quantity:{label:v, value:v}})
                                 }
                             });
                         }}
@@ -151,9 +213,10 @@ class _SelectTransferItem extends Component {
                 <SeparateLine />
                 <ExPicker
                     data={reservoirLibraryList}
-                    selectedFirst={true}
+                    selectedFirst={false}
+                    val={this.material.sourcePosition ? this.material.sourcePosition.value:''}
                     cols={1}
-                    onOk={(val)=>this.onPickerOk(val, '源库位')}
+                    onOk={(val)=>this.onPickerOk(this.fromVal(reservoirLibraryList, val), 'sourcePosition')}
                     pickerStyle={{
                         borderBottom:'1px solid #eee',
                     }}
@@ -174,9 +237,10 @@ class _SelectTransferItem extends Component {
                 />
                 <ExPicker
                     data={reservoirLibraryList}
-                    selectedFirst={true}
+                    selectedFirst={false}
+                    val={this.material.destPosition ? this.material.destPosition.value:''}
                     cols={1}
-                    onOk={(val)=>this.onPickerOk(val, '目标库位')}
+                    onOk={(val)=>this.onPickerOk(this.fromVal(reservoirLibraryList, val), 'destPosition')}
                     pickerStyle={{
                         borderBottom:'1px solid #eee',
                     }}
@@ -196,10 +260,11 @@ class _SelectTransferItem extends Component {
                     }}
                 />
                 <ExPicker
-                    data={materialDescriptionMap}
-                    selectedFirst={true}
+                    data={this.state.reasons}
+                    selectedFirst={false}
+                    val={this.material.reason ? this.material.reason.value:''}
                     cols={1}
-                    onOk={(val)=>this.onPickerOk(val, '原因')}
+                    onOk={(val)=>this.onPickerOk(this.fromVal(this.state.reasons, val), 'reason')}
                     pickerStyle={{
                         borderBottom:'1px solid #eee',
                     }}

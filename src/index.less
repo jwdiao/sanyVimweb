@@ -30,8 +30,24 @@ div.am-list-body::after{
     background: -o-linear-gradient(90deg, @primaryColor, @secondaryColor); /* Opera 11.1 - 12.0 */
     background: -moz-linear-gradient(90deg, @primaryColor, @secondaryColor); /* Firefox 3.6 - 15 */
     background: linear-gradient(90deg, @primaryColor, @secondaryColor); /* 标准的语法（必须放在最后） */
-    height: 60px;
+    height: 56px;
   }
+  .am-navbar-left{
+    padding-left:0;
+  }
+}
+.collapse-common-class.ant-collapse > .ant-collapse-item > .ant-collapse-header .ant-collapse-arrow{
+  top:90%;
+  left:49%;
+}
+.collapse-common-class.ant-collapse > .ant-collapse-item {
+  border-bottom:none;
+}
+.collapse-common-class.ant-collapse > .ant-collapse-item > .ant-collapse-header {
+  box-shadow: inset 0 -15px 24px -15px #d4ddf5;
+}
+.collapse-common-class.ant-collapse .ant-collapse-content > .ant-collapse-content-box {
+  padding:0;
 }
 
 .am-tabs {
@@ -45,6 +61,15 @@ div.am-list-body::after{
     }
   }
 }
+
+.tab-common-class {
+  .tab-common-class-tab-bar-wrap {
+    .am-tabs-default-bar{
+      background: #fff;
+    }
+  }
+}
+
 .popup-search-bar{
   width:100%;
 }
@@ -191,9 +216,81 @@ div.am-list-body::after{
     height: 24px !important;
     min-height: 24px !important;
     padding: 0 !important;
+    border-bottom:none;
+    .am-list-line::after{
+      background-color: #fff !important;
+    }
   }
 
   &.am-list-item &.am-input-control input {
     font-size: 14px;
   }
 }
+
+.mob-login-input .ant-input{
+  border: none;
+  border-bottom: 1px solid #D3DFEF;
+  background: none;
+  padding-left: 50px !important;
+  height: 50px;
+  border-radius: 0;
+  font-family: 'Microsoft Yahei Light';
+}
+
+.searchbar-input.am-list-item.am-list-item-middle{
+  border: none;
+  height: 30px;
+  background-color: #E0DFDF;
+  // padding-left:10px;
+  border-radius: 18px;
+  font-size: 16px;
+}
+.searchbar-input {
+  &.am-list-item{
+    &.am-list-item-middle{
+      border: none;
+      min-height: 36px;
+      padding-top: 7px;
+      padding-bottom: 7px;
+    }
+  }
+}
+
+.ii-searchbar{
+  &.am-search{
+    .am-search-input{
+      .am-search-synthetic-ph{
+        height: 36px;
+        line-height: 36px;
+        background-color: #E0DFDF;
+      }
+      height: 36px;
+      border-radius: 18px;
+      input[type="search"]{
+        background-color: #E0DFDF;
+        height: 36px;
+        text-align: left;
+      }
+    }
+  }
+}
+
+.ant-input-affix-wrapper .ant-input:focus {
+  border: none;
+  border-bottom: 1px solid #D3DFEF !important;
+  box-shadow: none;
+}
+.mob-login-input .ant-input-prefix{
+  width: 50px;padding-left:5px;
+}
+
+.gt-picker-item {
+  &.am-list-item .am-list-line .am-list-extra{
+    flex-basis: 100%;
+  }
+}
+
+input:-webkit-autofill {
+-webkit-box-shadow: 0 0 0px 1000px white inset
+}
+
