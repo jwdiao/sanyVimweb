@@ -79,7 +79,7 @@ class _LoginPage extends Component {
                         device = 1;
 
                         let params = { userName: user.userName };
-                        let slist = http.post('/user/userSupplierList', params)
+                        let slist = await http.post('/user/userSupplierList', params)
                         if (slist && slist.data) {
                             let vendors = slist.data.map(i => {
                             return {
@@ -102,7 +102,9 @@ class _LoginPage extends Component {
                 Durian.set('user', user);
                 this.props.history.push(forwardUrl);
                 } else {
-                    Toast.fail(resp.msg, 1);
+                    if (resp && resp.msg) {
+                        Toast.fail(resp.msg, 1);
+                    }
                 }
             } else {
                 Toast.fail(err, 1);

@@ -1,24 +1,20 @@
-/**
- * 增加待发货的Modal
- * 因为比较特殊，单独写一个Component
- */
 import React, {Component} from 'react';
 import {
     Modal,
-    Input,
     Table,
     Button,
     Popconfirm,
-    Form, Select, InputNumber, message,
+    Form, Select, InputNumber, message, DatePicker, AutoComplete,
 } from 'antd';
 import styled from "styled-components";
 import freshId from 'fresh-id'
+import moment from 'moment'
 import {
-    http,
-    TABLE_OPERATION_DELETE,
-    TABLE_OPERATION_EDIT,
-    vendorList
+    http, isEmpty,
 } from "../../../utils";
+import {TableButton} from "../../admin/components/TableButton";
+
+const _ = require('lodash')
 
 const modalTitleMap = {
     'to_be_shipped_infos': '新增待发货信息',
@@ -30,15 +26,18 @@ const EditableContext = React.createContext();
 const Option = Select.Option
 
 class EditableCell extends React.Component {
+    state = {
+        // AutoComplete 组件所需数据源
+        dataSource: [],
+    }
+
     materialCodeListener = ({materialCode, materialObject}) => {
         const {record, handleMaterialCodeChanged} = this.props
-        // // console.log('materialCodeListener called', record)
         handleMaterialCodeChanged({record, materialCode, materialObject})
     }
 
     materialQuantityListener = (quantity) => {
         const {record, handleMaterialQuantityChanged} = this.props
-        // // console.log('materialQuantityListener called', record)
         handleMaterialQuantityChanged(record, quantity)
     }
 
@@ -47,11 +46,8 @@ class EditableCell extends React.Component {
             let options = []
             switch (columnId) {
                 case 'vendorName':
-                    options = vendorList
+                    options = []
                     break
-                // case 'material':
-                //     options = materialTypeMap
-                //     break
                 default:
                     break
             }
@@ -80,9 +76,15 @@ class EditableCell extends React.Component {
             )
         } else if (this.props.inputType === 'input') {
             return (
-                <Input
+                <AutoComplete
+                    dataSource={this.state.dataSource}
                     style={{width: '100%'}}
+                    onSearch={this.handleSearch}
                     placeholder="请输入物料编号"
+                    // filterOption={(inputValue, option) => {
+                    //     console.log('filterOption =' , inputValue, option)
+                    //     return true
+                    // }}
                 />
             )
         } else {
@@ -91,10 +93,36 @@ class EditableCell extends React.Component {
 
     };
 
+    // AutoComplete组件监听
+    handleSearch = async value => {
+        if (value.length < 3) {
+            this.setState({
+                dataSource: []
+            })
+            return
+        }
+        // console.log('handleSearch userSpecifiedVendor', this.props.userSpecifiedVendor)
+        const result = await http.post('/factorySupplierMaterial/find/all', {
+            // materialCode: value,
+            supplierCode: this.props.userSpecifiedVendor.value
+        })
+        console.log('handleSearch', result)
+        if (!isEmpty(value)) {
+            if (result.ret === '200' && result.data.content.length > 0) {
+                this.setState({
+                    dataSource: !value ? [] : _.uniq(result.data.content.map(content => content.materialCode).filter(content => content.indexOf(value) > -1)),
+                })
+            } else {
+                this.setState({
+                    dataSource: []
+                })
+            }
+        }
+    };
+
     // 根据物料获取物料名
     getVendorMaterialNameValidator = async (rule, value, callback, source, options) => {
-        let errors = [];
-        const result = await http.post('/factorySupplierMaterial/find/all ', {
+        const result = await http.post('/factorySupplierMaterial/find/all', {
             materialCode: value,
         })
         // // console.log('getMaterialNameValidator', result)
@@ -130,6 +158,7 @@ class EditableCell extends React.Component {
 
     render() {
         const {
+            userSpecifiedVendor,
             inputType,
             editing,
             dataIndex,
@@ -186,19 +215,30 @@ class EditableTable extends React.Component {
     constructTableColumns = () => {
         return [
             {
-                title: '物料',
+                title: '序号',
+                dataIndex: 'rowIndex',
+                width: '10%',
+                editable: false,
+            },
+            {
+                title: '物料编码',
                 dataIndex: 'material',
-                width: '30%',
+                width: '22%',
                 editable: true,
             }, {
-                title: '描述',
+                title: '物料描述',
                 dataIndex: 'description',
-                width: '30%',
+                width: '23%',
+                editable: false,
+            }, {
+                title: '单位',
+                dataIndex: 'unit',
+                width: '10%',
                 editable: false,
             }, {
                 title: '数量',
                 dataIndex: 'quantity',
-                width: '20%',
+                width: '15%',
                 editable: true,
             }, {
                 title: '操作',
@@ -212,42 +252,37 @@ class EditableTable extends React.Component {
                                 <OperationArea>
                                     <EditableContext.Consumer>
                                         {form => (
-                                            <a
-                                                href="javascript:;"
+                                            <TableButton
+                                                type='save'
                                                 onClick={() => this.save(form, record)}
-                                                style={{marginRight: 8}}
-                                            >
-                                                保存
-                                            </a>
+                                            />
                                         )}
                                     </EditableContext.Consumer>
                                     <Popconfirm
                                         title="确定取消吗?"
                                         onConfirm={() => this.cancel(record.key)}
                                     >
-                                        <a>取消</a>
+                                        <TableButton
+                                            type='cancel'
+                                        />
                                     </Popconfirm>
                                 </OperationArea>
                             ) : (
                                 <OperationArea>
-                                    <OperationButton
+                                    <TableButton
                                         disabled={editingKey !== ''}
-                                        color={TABLE_OPERATION_EDIT}
+                                        type='edit'
                                         onClick={() => this.edit(record.key)}
-                                    >
-                                        编辑
-                                    </OperationButton>
+                                    />
 
                                     <Popconfirm
                                         title="确定删除吗?"
                                         onConfirm={() => this.delete(record.key)}
                                     >
-                                        <OperationButton
+                                        <TableButton
                                             disabled={editingKey !== ''}
-                                            color={TABLE_OPERATION_DELETE}
-                                        >
-                                            删除
-                                        </OperationButton>
+                                            type='delete'
+                                        />
                                     </Popconfirm>
 
                                 </OperationArea>
@@ -263,12 +298,12 @@ class EditableTable extends React.Component {
     // 取消
     cancel = (key) => {
         const {dataSource} = this.state;
-        const index = dataSource.findIndex(data=> data.key === key)
+        const index = dataSource.findIndex(data => data.key === key)
         const data = dataSource[index]
         // console.log('cancel data',data)
         // 取消的话，如果data中的物料信息是空的，那么要把这条记录删除掉
         if (isEmpty(data.material)) {
-            dataSource.splice(index,1)
+            dataSource.splice(index, 1)
             this.setState({
                 dataSource,
                 editingKey: '',
@@ -291,14 +326,19 @@ class EditableTable extends React.Component {
         const {onMaterialListChangedListener} = this.props
         const newData = [...this.state.dataSource];
         const index = newData.findIndex(item => key === item.key);
-        newData.splice(index, 1)
-        this.setState({
-            dataSource: newData
-        });
+        if (index > -1) {
+            newData.splice(index, 1)
+            this.setState({
+                dataSource: newData.map((data,index)=>({...data, rowIndex: index+1})),
+                editingKey: ''
+            });
 
-        // 传递给外层父组件物料列表
-        if (onMaterialListChangedListener) {
-            onMaterialListChangedListener(newData)
+            // 传递给外层父组件物料列表
+            if (onMaterialListChangedListener) {
+                onMaterialListChangedListener(newData)
+            }
+        } else {
+            message.error('物料删除失败！请重试。')
         }
     }
 
@@ -308,8 +348,10 @@ class EditableTable extends React.Component {
         const newDataKey = freshId()
         const newData = {
             key: newDataKey,
+            rowIndex: dataSource.length+1,
             material: '',
             description: '--',
+            unit: '--',
             quantity: 1,
         };
         this.setState({
@@ -320,9 +362,10 @@ class EditableTable extends React.Component {
 
     // 点击保存事件
     save = (form, record) => {
-        // // console.log('handleSave called', row)
+        console.log('handleSave called', record)
         const {onMaterialListChangedListener} = this.props
-        form.validateFields(async (error, row)=>{
+        form.validateFields(async (error, row) => {
+            console.log('save error', error, row)
             if (error) return
             const newData = [...this.state.dataSource];
             const index = newData.findIndex(item => record.key === item.key);
@@ -346,13 +389,13 @@ class EditableTable extends React.Component {
     // 当物料编号变化时，更新数据集（要动态设置物料名称）
     handleMaterialCodeChanged = ({record, materialCode, materialObject}) => {
         // // console.log('handleMaterialCodeChanged called', record, description)
-        const {onMaterialListChangedListener} = this.props
+        // const {onMaterialListChangedListener} = this.props
         const newData = [...this.state.dataSource];
         const index = newData.findIndex(item => record.key === item.key);
-        const item = Object.assign({}, newData[index], {id: record.id}, {material: materialCode}, {description: materialObject.materialName});
+        const item = Object.assign({}, newData[index], {id: record.id}, {material: materialCode}, {description: materialObject.materialName}, {unit: materialObject.units});
         newData.splice(index, 1, item);
         // // console.log('handleMaterialCodeChanged', newData)
-        this.setState({dataSource: newData},()=>{
+        this.setState({dataSource: newData}, () => {
             // 传递给外层父组件物料列表
             // if (onMaterialListChangedListener) {
             //     onMaterialListChangedListener(newData)
@@ -363,13 +406,13 @@ class EditableTable extends React.Component {
     // 当物料数量变化时，更新数据集（要动态设置物料数量）
     handleMaterialQuantityChanged = (record, quantity) => {
         // // console.log('handleMaterialQuantityChanged called', record, quantity)
-        const {onMaterialListChangedListener} = this.props
+        // const {onMaterialListChangedListener} = this.props
         const newData = [...this.state.dataSource];
         const index = newData.findIndex(item => record.key === item.key);
         const item = Object.assign({}, newData[index], {quantity});
         newData.splice(index, 1, item);
         // // console.log('handleMaterialQuantityChanged', newData)
-        this.setState({dataSource: newData},()=>{
+        this.setState({dataSource: newData}, () => {
             // 传递给外层父组件物料列表
             // if (onMaterialListChangedListener) {
             //     onMaterialListChangedListener(newData)
@@ -378,13 +421,14 @@ class EditableTable extends React.Component {
     }
 
     render() {
-        const {dataSource, columns: _columns} = this.state;
+        const {dataSource, columns: _columns, editingKey} = this.state;
         const {
+            userSpecifiedVendor,
             _vendorList,
             _factoryList,
             onVendorSelectChangedCalled,
             onFactorySelectChangedCalled,
-            onTPTextChangedCalled
+            onExpectedDateChangedCalled,
         } = this.props
         const components = {
             body: {
@@ -410,7 +454,8 @@ class EditableTable extends React.Component {
                     editing: this.isEditing(record),
                     handleSave: this.handleSave,
                     handleMaterialCodeChanged: this.handleMaterialCodeChanged,
-                    handleMaterialQuantityChanged: this.handleMaterialQuantityChanged
+                    handleMaterialQuantityChanged: this.handleMaterialQuantityChanged,
+                    userSpecifiedVendor: userSpecifiedVendor,
                 }),
             };
         });
@@ -424,6 +469,7 @@ class EditableTable extends React.Component {
                                 placeholder="请选择供应商"
                                 onBlur={onVendorSelectChangedCalled}
                                 onChange={onVendorSelectChangedCalled}
+                                defaultValue={_vendorList.length > 0 ? _vendorList[0].value : null}
                             >
                                 {
                                     _vendorList.map(option => {
@@ -442,6 +488,7 @@ class EditableTable extends React.Component {
                                 placeholder="请选择工厂"
                                 onBlur={onFactorySelectChangedCalled}
                                 onChange={onFactorySelectChangedCalled}
+                                defaultValue={_factoryList.length > 0 ? _factoryList[0].value : null}
                             >
                                 {
                                     _factoryList.map(option => {
@@ -455,16 +502,36 @@ class EditableTable extends React.Component {
                                     })
                                 }
                             </Select>
-                            <Input
-                                style={{width: '32%', marginLeft: '2%'}}
-                                placeholder="请输入运输周期"
-                                onChange={onTPTextChangedCalled}
-                                onBlur={onTPTextChangedCalled}
-                                onPressEnter={onTPTextChangedCalled}
+                            {/*<InputNumber*/}
+                            {/*    style={{width: '32%', marginLeft: '2%'}}*/}
+                            {/*    placeholder="请输入运输周期"*/}
+                            {/*    min={1}*/}
+                            {/*    formatter={value => `${value}天`}*/}
+                            {/*    parser={value => value.replace('天', '')}*/}
+                            {/*    onChange={onTPTextChangedCalled}*/}
+                            {/*    onBlur={onTPTextChangedCalled}*/}
+                            {/*    onPressEnter={onTPTextChangedCalled}*/}
+                            {/*/>*/}
+                            <DatePicker
+                                style={{width: '45%', marginLeft: '2%'}}
+                                placeholder="请选择预到日期"
+                                disabledDate={disabledDate}
+                                onChange={onExpectedDateChangedCalled}
                             />
+                            {/*<Input*/}
+                            {/*    style={{width: '15%', marginLeft: '2%'}}*/}
+                            {/*    placeholder="请输入操作人"*/}
+                            {/*    defaultValue={name}*/}
+                            {/*    onChange={onOperatorTextChangedCalled}*/}
+                            {/*    onBlur={onOperatorTextChangedCalled}*/}
+                            {/*    onPressEnter={onOperatorTextChangedCalled}*/}
+                            {/*/>*/}
                         </TitleInputContainerView>
-                        <Button onClick={this.handleAddButtonClicked} type="primary"
-                                style={{alignSelf: 'center'}}>
+                        <Button
+                            disabled={editingKey !== ''}
+                            onClick={this.handleAddButtonClicked}
+                            type="primary"
+                            style={{alignSelf: 'center'}}>
                             增加物料信息
                         </Button>
                     </TitleContainerView>
@@ -472,7 +539,7 @@ class EditableTable extends React.Component {
                         className="data-board-mini-table"
                         components={components}
                         rowClassName={() => 'editable-row'}
-                        bordered
+                        bordered={false}
                         dataSource={dataSource}
                         columns={columns}
                         pagination={false}
@@ -499,20 +566,26 @@ class _AddShippingModal extends Component {
             materialList: [],// 选择增加的物料列表
             selectedFactory: '', // 选择的工厂
             selectedVendor: '',// 选择的供应商
-            transportPeriod: '',// 输入的运输周期
+            expectReachDate: '',// 输入的运输周期
+            operator: props.userInfo.userName,// 操作人(默认为当前登录的用户)
         }
     }
 
     async componentDidMount() {
+        const {userInfo} = this.props
+        const userSpecifiedVendor = _.get(userInfo, 'vendor')
+
         //获取列表数据：供应商列表
         const result = await http.post('/supplier/supplierList', {})
         if (result.ret === '200') {
+            let _vendorList = result.data.content.map(item => ({
+                key: `vendor_${item.code}`,
+                value: item.code,
+                label: item.name
+            }))
             this.setState({
-                _vendorList: result.data.content.map(item => ({
-                    key: `vendor_${item.code}`,
-                    value: item.code,
-                    label: item.name
-                }))
+                selectedVendor: _vendorList.filter(vendor => vendor.value === userSpecifiedVendor.value)[0].value,
+                _vendorList,
             })
         } else {
             message.error('获取供应商列表失败！请稍候重试。')
@@ -521,12 +594,14 @@ class _AddShippingModal extends Component {
         //获取列表数据：工厂列表
         const result2 = await http.post('/factory/factoryList', {})
         if (result2.ret === '200') {
-            this.setState({
-                _factoryList: result2.data.content.map(item => ({
+            let _factoryList = result2.data.content.map(item => ({
                     key: `factory_${item.code}`,
                     value: item.code,
                     label: item.name
                 }))
+            this.setState({
+                selectedFactory: _factoryList[0].value,
+                _factoryList,
             })
         } else {
             message.error('获取工厂列表失败！请稍候重试。')
@@ -553,11 +628,18 @@ class _AddShippingModal extends Component {
         })
     }
 
-    // 运输周期输入框监听
-    onTPTextChangedCalled = (event) => {
+    // 预到日期选择监听
+    onExpectedDateChangedCalled = (date, dateString) => {
+        this.setState({
+            expectReachDate: dateString,
+        })
+    }
+
+    // 操作人输入框监听
+    onOperatorTextChangedCalled = (event) => {
         const {value} = event.target
         this.setState({
-            transportPeriod: value,
+            operator: value
         })
     }
 
@@ -571,10 +653,12 @@ class _AddShippingModal extends Component {
 
     handleOk = async (e) => {
         e.preventDefault();
-        const {_vendorList, selectedVendor, selectedFactory, transportPeriod, materialList} = this.state
+        const {selectedVendor, selectedFactory, expectReachDate, operator, materialList} = this.state
+
+        console.log('handleOk called', this.state)
 
         // 校验规则
-        if (isEmpty(selectedVendor) || isEmpty(transportPeriod)) {
+        if (isEmpty(selectedVendor) || isEmpty(expectReachDate) || isEmpty(operator)) {
             message.error('请填写完整信息再提交！')
             return
         }
@@ -593,11 +677,12 @@ class _AddShippingModal extends Component {
         let params = {
             factoryCode: selectedFactory,
             supplierCode: selectedVendor,
-            transportTime: transportPeriod,
+            transportTime: expectReachDate,
             materialList: materialList.map(material => ({
                 materiaCode: material.material,
                 materiaNum: material.quantity
-            }))
+            })),
+            saveName: operator.trim(),
         }
         let requestUrl = '/order/save'
 
@@ -611,6 +696,7 @@ class _AddShippingModal extends Component {
             if (this.props.onOkClickedListener) {
                 this.props.onOkClickedListener('to_be_shipped_infos', {})
             }
+            message.success('操作成功！')
         } else {
             message.error('数据提交失败！请稍候重试。')
         }
@@ -620,9 +706,10 @@ class _AddShippingModal extends Component {
             confirmLoading: false,
             //注意清空变量
             materialList: [],// 选择增加的物料列表
-            selectedFactory: '', // 选择的工厂
-            selectedVendor: '',// 选择的供应商
-            transportPeriod: '',// 输入的运输周期
+            // selectedFactory: '', // 选择的工厂
+            // selectedVendor: '',// 选择的供应商
+            expectReachDate: '',// 输入的运输周期
+            operator: this.props.userInfo.userName,// 操作人(默认为当前登录的用户)
         });
     }
 
@@ -634,9 +721,10 @@ class _AddShippingModal extends Component {
 
             // 注意清空state变量
             materialList: [],// 选择增加的物料列表
-            selectedFactory: '', // 选择的工厂
-            selectedVendor: '',// 选择的供应商
-            transportPeriod: '',// 输入的运输周期
+            // selectedFactory: '', // 选择的工厂
+            // selectedVendor: '',// 选择的供应商
+            expectReachDate: '',// 输入的运输周期
+            operator: this.props.userInfo.userName,// 操作人(默认为当前登录的用户)
         });
         if (this.props.onCancelClickedListener) {
             this.props.onCancelClickedListener()
@@ -651,14 +739,16 @@ class _AddShippingModal extends Component {
         } else {
             result = await http.get(requestUrl)
         }
-        // console.log(`request: ${requestUrl}`, 'params:', params, 'result:', result)
+        console.log(`request: ${requestUrl}`, 'params:', params, 'result:', result)
         return result && result.ret === '200'
     }
 
     render() {
-        const {modalType} = this.props
-        const {visible, confirmLoading, _vendorList, _factoryList} = this.state;
-
+        const {modalType, userInfo} = this.props
+        const {visible, confirmLoading, _vendorList, _factoryList} = this.state
+        const userSpecifiedVendor = _.get(userInfo, 'vendor')
+        // console.log('userSpecifiedVendor',userSpecifiedVendor)
+        const name = _.get(userInfo, 'name')
         return (
             <div>
                 <Modal
@@ -668,15 +758,18 @@ class _AddShippingModal extends Component {
                     confirmLoading={confirmLoading}
                     onCancel={this.handleCancel}
                     destroyOnClose={true}
-                    width='50%'
+                    width='70%'
                     bodyStyle={{width: '100%'}}
                 >
                     <FormWrappedTable
-                        _vendorList={_vendorList}
+                        _vendorList={userSpecifiedVendor ? _vendorList.filter(vendor => vendor.value === userSpecifiedVendor.value) : _vendorList}
                         _factoryList={_factoryList}
+                        userSpecifiedVendor={userSpecifiedVendor}
+                        name={name}
                         onVendorSelectChangedCalled={this.onVendorSelectChangedCalled}
                         onFactorySelectChangedCalled={this.onFactorySelectChangedCalled}
-                        onTPTextChangedCalled={this.onTPTextChangedCalled}
+                        onExpectedDateChangedCalled={this.onExpectedDateChangedCalled}
+                        onOperatorTextChangedCalled={this.onOperatorTextChangedCalled}
                         onMaterialListChangedListener={this.onMaterialListChangedListener}
                     />
                 </Modal>
@@ -685,8 +778,9 @@ class _AddShippingModal extends Component {
     }
 }
 
-function isEmpty(testString) {
-    return !testString || testString.length === 0 || testString === ''
+function disabledDate(current) {
+    // Can not select days before today and today
+    return current && current < moment().startOf('day');
 }
 
 export const AddShippingModal = _AddShippingModal;
@@ -699,7 +793,7 @@ const InputContainerView = styled.div`
   width: 100%;
   height: 100%;
   padding: 10px 10px;
-  // border: #5a8cff 2px solid;
+  // border: #48b2f7 2px solid;
 `
 
 const TitleContainerView = styled.div`
@@ -711,7 +805,7 @@ const TitleContainerView = styled.div`
   height: 20%;
   padding: 10px 10px;
   margin: 0px 10px 10px 10px;
-  // border: #5a8cff 2px solid;
+  // border: #48b2f7 2px solid;
 `
 
 const TitleInputContainerView = styled.div`
@@ -721,7 +815,7 @@ const TitleInputContainerView = styled.div`
   align-items: center;
   width: 70%;
   height: 20%;
-  // border: #5a8cff 2px solid;
+  // border: #48b2f7 2px solid;
 `
 
 const OperationArea = styled.div`
@@ -729,10 +823,4 @@ const OperationArea = styled.div`
   flex-direction: row;
   justify-content: center;
   align-items: center;
-`
-
-const OperationButton = styled.a`
-  margin-left:4%; 
-  margin-right:4%; 
-  color:${p => (p.disabled ? 'gray' : p.color)};
 `

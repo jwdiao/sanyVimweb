@@ -1,9 +1,9 @@
 import React, {Component} from 'react';
 import {
-    http,
+    http, PRIMARY_COLOR,
     validStateList,
 } from "../../../utils";
-import {Button, Input, Select, Upload} from "antd";
+import {Button, Icon, Input, message, Select, Upload} from "antd";
 import styled from "styled-components";
 
 const Search = Input.Search;
@@ -37,8 +37,8 @@ class _AdminHeader extends Component {
 
     async componentDidMount() {
         let params = {
-            page: 1,
-            pageSize:10,
+            // page: 1,
+            // pageSize:10,
         }
         let requestUrl = '/supplier/supplierList'
         const result = await http.post(requestUrl,params)
@@ -57,6 +57,47 @@ class _AdminHeader extends Component {
         })
     }
 
+    componentWillReceiveProps(nextProps, nextContext) {
+        if (nextProps.selectedTabKey !== this.props.selectedTabKey) {
+            // 点击切换了侧边栏后，要清空筛选条件
+            this.setState({
+                tab1_obj: {
+                    sanyId: '',
+                    sanyName: '',
+                },
+                tab2_obj: {
+                    vendorId: '',
+                    vendorName: '',
+                },
+                tab3_obj: {
+                    userName: '',
+                    name: '',
+                    mobile: '',
+                    vendor: '',
+                    status: '',
+                },
+            })
+        }
+    }
+
+    downLoadTemplateFile = (type) => {
+        let requestUrl = ''
+        let fileName = ''
+        switch (type) {
+            case 'basic_material_type_management':
+                requestUrl = 'download/template/materialtempalte.xls' // Todo:配置下载地址
+                fileName = '基础物料模板'
+                break
+            default:
+                break
+        }
+        http.downloadFile(requestUrl, fileName).then(result=>{
+            message.success('开始下载...')
+        }).catch(e=>{
+            message.error('文件下载失败！请稍后重试。', e)
+        })
+    }
+
     render() {
         const {
             selectedTabKey,// 当前选择的Tab页
@@ -65,12 +106,9 @@ class _AdminHeader extends Component {
             onSearchButtonClicked,
             onAddButtonClicked,
 
-            onBatchImportButtonClicked
-
         } = this.props
 
-        console.log('this')
-
+        console.log('==uploadProps==',uploadProps)
         const {
             tab3_obj,
             vendorList
@@ -98,11 +136,11 @@ class _AdminHeader extends Component {
                         </TableSearchView>
 
                         <TableButtonsView>
-                            <Button
-                                type="primary"
-                                style={{marginRight: '6px'}}
-                                onClick={() => onAddButtonClicked()}
-                            >新增</Button>
+                            {/*<Button*/}
+                            {/*    type="primary"*/}
+                            {/*    style={{marginRight: '6px'}}*/}
+                            {/*    onClick={() => onAddButtonClicked()}*/}
+                            {/*>新增</Button>*/}
                         </TableButtonsView>
                     </TableControllerView>
                 )
@@ -141,7 +179,7 @@ class _AdminHeader extends Component {
             case 'user':
                 tableComponent = (
                     <TableControllerView>
-                        <TableSearchView style={{width: '100%', justifyContent: 'flex-start'}}>
+                        <TableSearchView style={{justifyContent: 'flex-start'}}>
                             <SelectView
                                 key={'tab3_1'}
                                 placeHolder="选择供应商"
@@ -178,7 +216,7 @@ class _AdminHeader extends Component {
 
                             <Input
                                 key={'tab3_3'}
-                                style={{width: '250px', marginRight: '6px'}}
+                                style={{width: '30%', marginRight: '6px'}}
                                 placeholder="请输入用户名/姓名/手机号"
                                 onChange={(e) => {
                                     const {value} = e.target
@@ -186,7 +224,7 @@ class _AdminHeader extends Component {
                                         return {
                                             tab3_obj: Object.assign({}, prevState.tab3_obj, {userName: value}, {name: value}, {mobile: value})
                                         }
-                                    })
+                                    }, () => onSearchButtonClicked(selectedTabKey, this.state.tab3_obj))
                                 }}
                                 onPressEnter={(e) => {
                                     const {value} = e.target
@@ -233,14 +271,30 @@ class _AdminHeader extends Component {
                             />
                         </TableSearchView>
 
-                        <TableButtonsView>
+                        <TableButtonsView style={{width: '50%'}}>
+                            <Button
+                                type="link"
+                                style={{color: PRIMARY_COLOR}}
+                            >
+                                <Icon type="file-excel" theme="filled"/>
+                                <a href={`${http.baseUrl}/download/template/materialtempalte.xls`}  style={{marginLeft: '6px', textDecoration:'underline'}} >点此下载批量导入模板</a>
+                            </Button>
                             <Upload {...uploadProps}
                                     style={{marginRight: '6px'}}
                             >
                                 <Button
+                                    className={'table-button-style'}
                                     type="primary"
                                     icon="import"
-                                    onClick={() => onBatchImportButtonClicked(selectedTabKey)}
+                                    // onClick={() => onBatchImportButtonClicked(selectedTabKey)}
+                                    style={{
+                                        marginLeft: '2%',
+                                        marginRight:'2%',
+                                        color:'#fff',
+                                        backgroundColor: '#59e37a',
+                                        borderRadius:4,
+                                        borderColor: 'transparent'
+                                    }}
                                 >批量导入</Button>
                             </Upload>
                             <Button
@@ -275,10 +329,15 @@ class SearchView extends Component {
         const {placeHolder, onSearchCalled} = this.props
         return (
             <Search
+                style={{width: '70%', marginRight: '6px'}}
                 placeholder={placeHolder}
                 enterButton="搜索"
                 size="default"
                 onSearch={onSearchCalled}
+                onChange={(e)=>{
+                    const {value} = e.target
+                    onSearchCalled(value)
+                }}
             />
         )
     }
@@ -298,7 +357,7 @@ class SelectView extends Component {
         return (
             <Select
                 allowClear={true}
-                style={{width: '160px', marginRight: '6px'}}
+                style={{width: '30%', marginRight: '6px'}}
                 placeholder={placeHolder}
                 onChange={onChangeCalled}
             >
@@ -340,18 +399,20 @@ const TableControllerView = styled.div`
 const TableSearchView = styled.div`
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   height: 80px;
-  width: 600px;
+  width: 70%;
   // border: yellow solid 2px;
 `
 const TableButtonsView = styled.div`
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   justify-content: flex-end;
   align-items: center;
   height: 80px;
-  width: 400px;
+  width: 30%;
   // border: blue solid 2px;
 `

@@ -7,7 +7,11 @@ const _ = require('lodash')
 class _AddDeliverDispatchInfoItem extends Component {
     render() {
         const material = this.props.data
+        const { units } = material.material;
+        console.log('_AddDeliverDispatchInfoItem material', material);
+        console.log('_AddDeliverDispatchInfoItem units', units);
         let materialKeys = _.keys(material)
+        _.remove(materialKeys, i => i === 'units');
         // let index = materialKeys.findIndex(material=>material === 'id')
         // materialKeys.splice(index,1)
         return (
@@ -19,12 +23,16 @@ class _AddDeliverDispatchInfoItem extends Component {
                 <ContentView>
                     {
                         materialKeys.slice(1,materialKeys.length).map((materialKey, index) => {
+                            let val = material[materialKey].label;
+                            if (_.indexOf(['quantity', 'inInventoryQuantity', 'qualifiedQuantity'], materialKey) >= 0) {
+                                val = val + ' ' + units;
+                            }
                             return (
                                 <ItemWrapper
                                     key={materialKey}>
                                     <ItemView>
                                         <TitleText>{otherReceivedItemsMap[materialKey]}</TitleText>
-                                        <ContentContentText>{material[materialKey]}</ContentContentText>
+                                        <ContentContentText>{val}</ContentContentText>
                                     </ItemView>
                                     {
                                         index < materialKeys.length-2 && (
@@ -85,13 +93,14 @@ const SeparateLine = styled.div`
 `
 
 const TitleText = styled.div`
-    color: rgba(54, 53, 53, 1);
+    color: #333;
     font-size: 14px;
 `
 
 const ContentContentText = styled.div`
-    color: rgba(51, 51, 51, 1);
+    color: #333;
     font-size: 14px;
+    font-weight:bold;
 `
 
 const OperationHeader = styled.div`

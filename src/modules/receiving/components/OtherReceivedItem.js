@@ -1,10 +1,12 @@
 import React, {Component} from 'react';
 import styled from "styled-components";
 import freshId from 'fresh-id'
-import {otherReceivedItemsMap, generateRandomColor, http, receivedItemsMap} from "../../../utils";
+import {Modal} from "antd-mobile";
+import {otherReceivedItemsMap, generateRandomColor, http} from "../../../utils";
 import {Collapse} from "antd";
 
 const Panel = Collapse.Panel;
+const alert = Modal.alert;
 
 const _ = require('lodash')
 
@@ -16,21 +18,21 @@ class _OtherReceivedItem extends Component {
     constructor (props) {
         super(props);
         this.state = ({
-            materials:[]
+            materials:[],
         });
     }
 
     async componentWillMount () {
         const { data } = this.props
-        const code = data.number;
+        const code = data.code;
         const dbMat = await http.get(`/orderMaterial/find/ordercode/${code}`);
         let mats = dbMat.data.map(m => {
             return {
+                units: m.units,
                 material: m.materiaCode,
                 materialDescription: m.materiaName,
                 quantity: m.totalNumber,
                 inventoryPosition: m.wareHouseType,
-                inInventoryTime: m.deliveryTime,
                 reason: m.reason,
             }
         });
@@ -74,29 +76,28 @@ class _OtherReceivedItem extends Component {
                         header={
                             <HeaderView>
                                 <HeaderTextView>
-                                    {
-                                        keys.slice(0,3).map((_key, index)=>{
-                                            // console.log('_key, index', _key, index)
-                                            return (
-                                                <div
-                                                    key={_key}
-                                                    style={{display:'flex', flex:1, flexDirection:'row', justifyContent:'center'}}>
-                                                    <ItemView>
-                                                        <TitleText style={{display:'flex', flex:0.3, textAlign:'justify'}}>{otherReceivedItemsMap[_key]}</TitleText>
-                                                        <HeaderContentText style={{display:'flex', flex:0.7}}>{data[_key]}</HeaderContentText>
-                                                    </ItemView>
-                                                </div>
-
-                                            )
-                                        })
-                                    }
+                                    <ItemView>
+                                        <TitleText style={{display:'flex', flex:0.3, textAlign:'justify'}}>{otherReceivedItemsMap['otherReceiveCode']}</TitleText>
+                                        <HeaderContentText style={{display:'flex', flex:0.7}}>{data['otherReceiveCode']}</HeaderContentText>
+                                    </ItemView>
+                                    <ItemView>
+                                        <TitleText style={{display:'flex', flex:0.3, textAlign:'justify'}}>{otherReceivedItemsMap['otherReceiveTime']}</TitleText>
+                                        <HeaderContentText style={{display:'flex', flex:0.7}}>{data['otherReceiveTime']}</HeaderContentText>
+                                    </ItemView>
+                                    <ItemView>
+                                        <TitleText style={{display:'flex', flex:0.3, textAlign:'justify'}}>{otherReceivedItemsMap['otherReceiveName']}</TitleText>
+                                        <HeaderContentText style={{display:'flex', flex:0.7}}>{data['otherReceiveName']}</HeaderContentText>
+                                    </ItemView>
                                 </HeaderTextView>
                                 {
                                     true && <ReverseButton
                                         onClick={(event)=>{
                                             event.stopPropagation();
                                             console.log('ReverseButton clicked! data id = ',id)
-                                            this.props.onReverse(id);
+                                            alert('冲销确认', '是否冲销该条记录？', [
+                                                { text: '取消', onPress: () => console.log('cancel') },
+                                                { text: '确认', onPress: () => this.props.onReverse(id) },
+                                            ])
                                         }}
                                     >
                                         冲销
@@ -112,7 +113,9 @@ class _OtherReceivedItem extends Component {
                             {
                                 this.state.materials.map((material, mIndex)=>{
                                     // console.log('_key, index', _key, index)
+                                    const { units } = material;
                                     let _keys = _.keys(material)
+                                    _.remove(_keys, i => i === 'units');
                                     let itemStyle = {
                                         display:'flex',
                                         flex:1,
@@ -130,12 +133,19 @@ class _OtherReceivedItem extends Component {
                                         >
                                             {
                                                 _keys.map((key,index)=>{
+                                                    let val = material[key];
+                                                    if (_.indexOf(['quantity', 'inInventoryQuantity', 'qualifiedQuantity'], key) >= 0) {
+                                                        val = val + ' ' + units;
+                                                    }
+                                                    if (key === 'inventoryPosition') {
+                                                        val = (val === 1) ? '合格品库':'不合格品库';
+                                                    }
                                                     return (
                                                         <ItemWrapper
                                                             key={key}>
                                                             <ItemView>
                                                                 <TitleText>{otherReceivedItemsMap[key]}</TitleText>
-                                                                <ContentContentText>{material[key]}</ContentContentText>
+                                                                <ContentContentText>{val}</ContentContentText>
                                                             </ItemView>
                                                             <SeparateLine/>
                                                         </ItemWrapper>
@@ -167,19 +177,7 @@ const RootView = styled.div`
     justify-content: center;
     align-items: center;
     border-radius: 4px;
-    position:relative;
-    overflow:hidden;
-    padding-bottom:16px;
-    ::before {
-        content: ' ';
-        width: 100%;
-        height: 0;
-        position: absolute;
-        bottom: -4px;
-        border-bottom: 8px dotted #eee;
-        left: 4px;
-        right: 4px;
-    }
+   
 `
 const IndicatorTopBar = styled.div`
     display: flex;
@@ -197,8 +195,8 @@ const HeaderView = styled.div`
     flex-direction: row;
     z-index: 100;
     width: 100%;
-    height: 110px;
-    padding: 10px 0;
+    //height: 96px;
+    padding: 0 10px 20px 0;
     justify-content: center;
     align-items: center;
     // border: 1px red solid;
@@ -224,7 +222,19 @@ const ContentView = styled.div`
     // height: 226px;
     // padding: 10px 0;
     justify-content: center;
-    // box-shadow:15px 0px 37px 13px RGBA(229, 233, 243, 1);
+    position:relative;
+    overflow:hidden;
+    padding-bottom:16px;
+    ::before {
+        content: ' ';
+        width: 100%;
+        height: 0;
+        position: absolute;
+        bottom: -4px;
+        border-bottom: 8px dotted #eee;
+        left: 4px;
+        right: 4px;
+    }
 `
 
 const ItemWrapper = styled.div`
@@ -250,18 +260,20 @@ const SeparateLine = styled.div`
 `
 
 const TitleText = styled.div`
-    color: rgba(54, 53, 53, 1);
+    color: #333;
     font-size: 14px;
 `
 
 const ContentContentText = styled.div`
-    color: rgba(51, 51, 51, 1);
+    color: #333;
     font-size: 14px;
+    font-weight:bold;
 `
 
 const HeaderContentText = styled.div`
-    color: rgba(160, 157, 157, 1);
+    color: #333;
     font-size: 14px;
+    font-weight:bold;
 `
 
 const ReverseButton = styled.div`
@@ -280,5 +292,5 @@ const ExpandIcon = styled.div`
 `
 const ExpandIconItem = styled.div`
     height:3px;
-    border-top:1px solid #bbb;
+    border-top:1px solid #333;
 `

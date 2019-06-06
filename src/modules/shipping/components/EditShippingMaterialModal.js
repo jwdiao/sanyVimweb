@@ -5,20 +5,17 @@
 import React, {Component} from 'react';
 import {
     Modal,
-    Input,
     Table,
     Button,
     Popconfirm,
-    Form, Select, InputNumber, message,
+    Form, Select, InputNumber, message, AutoComplete,
 } from 'antd';
 import styled from "styled-components";
 import freshId from 'fresh-id'
 import {
-    http,
-    TABLE_OPERATION_DELETE,
-    TABLE_OPERATION_EDIT,
-    vendorList
+    http, isEmpty,
 } from "../../../utils";
+import {TableButton} from "../../admin/components/TableButton";
 
 const modalTitleMap = {
     'to_be_shipped_infos': '查看和修改待发货信息',
@@ -31,7 +28,10 @@ const Option = Select.Option
 const _ = require('lodash')
 
 class EditableCell extends React.Component {
-
+    state={
+        // AutoComplete 组件所需数据源
+        dataSource:[],
+    }
     materialCodeListener = ({materialCode, materialObject}) => {
         const {record, handleMaterialCodeChanged} = this.props
         // // console.log('materialCodeListener called', record)
@@ -49,7 +49,7 @@ class EditableCell extends React.Component {
             let options = []
             switch (columnId) {
                 case 'vendorName':
-                    options = vendorList
+                    options = []
                     break
                 // case 'material':
                 //     options = materialTypeMap
@@ -82,10 +82,10 @@ class EditableCell extends React.Component {
             )
         } else if (this.props.inputType === 'input') {
             return (
-                <Input
-                    // ref={ref=>this.input = ref}
-                    // autoFocus={this.state.editing}
+                <AutoComplete
+                    dataSource={this.state.dataSource}
                     style={{width: '100%'}}
+                    onSearch={this.handleSearch}
                     placeholder="请输入物料编号"
                 />
             )
@@ -95,9 +95,35 @@ class EditableCell extends React.Component {
 
     };
 
+    // AutoComplete组件监听
+    handleSearch = async value => {
+        if (value.length < 3) {
+            this.setState({
+                dataSource: []
+            })
+            return
+        }
+        const result = await http.post('/factorySupplierMaterial/find/all',{
+            // materialCode: value,
+            supplierCode: this.props.userSpecifiedVendor.value
+        })
+        console.log('handleSearch', result)
+        if (!isEmpty(value)) {
+            if (result.ret === '200' && result.data.content.length>0) {
+                this.setState({
+                    dataSource: !value ? [] : _.uniq(result.data.content.map(content=>content.materialCode).filter(content=>content.indexOf(value) > -1)),
+                })
+            } else {
+                this.setState({
+                    dataSource: []
+                })
+            }
+        }
+    };
+
     // 根据物料获取物料名
     getVendorMaterialNameValidator = async (rule, value, callback, source, options) => {
-        let errors = [];
+        // let errors = [];
         const result = await http.post('/factorySupplierMaterial/find/all ', {
             materialCode: value,
         })
@@ -134,6 +160,7 @@ class EditableCell extends React.Component {
 
     render() {
         const {
+            userSpecifiedVendor,
             inputType,
             editing,
             dataIndex,
@@ -192,12 +219,14 @@ class EditableTable extends React.Component {
         if (_.isEmpty(order)) return
         let oData = await this.getMaterialList(order)
         this.setState({
-            dataSource: oData.map(material => {
+            dataSource: oData.map((material, index) => {
                 return {
                     key: freshId(),
-                    id: material.id,
+                    rowIndex: index +1,
+                    id:material.id,
                     material: material.materiaCode,
                     description: material.materiaName,
+                    unit: material.units,
                     quantity: material.materiaNum,
                     state: material.status,
                 }
@@ -226,19 +255,30 @@ class EditableTable extends React.Component {
     constructTableColumns = () => {
         return [
             {
-                title: '物料',
+                title: '序号',
+                dataIndex: 'rowIndex',
+                width: '10%',
+                editable: false,
+            },
+            {
+                title: '物料编码',
                 dataIndex: 'material',
-                width: '30%',
+                width: '22%',
                 editable: true,
             }, {
-                title: '描述',
+                title: '物料描述',
                 dataIndex: 'description',
-                width: '30%',
+                width: '23%',
+                editable: false,
+            }, {
+                title: '单位',
+                dataIndex: 'unit',
+                width: '10%',
                 editable: false,
             }, {
                 title: '数量',
                 dataIndex: 'quantity',
-                width: '20%',
+                width: '15%',
                 editable: true,
             }, {
                 title: '操作',
@@ -252,42 +292,39 @@ class EditableTable extends React.Component {
                                 <OperationArea>
                                     <EditableContext.Consumer>
                                         {form => (
-                                            <a
-                                                href="javascript:;"
+                                            <TableButton
+                                                type='save'
                                                 onClick={() => this.save(form, record)}
-                                                style={{marginRight: 8}}
-                                            >
-                                                保存
-                                            </a>
+                                            />
                                         )}
                                     </EditableContext.Consumer>
                                     <Popconfirm
                                         title="确定取消吗?"
                                         onConfirm={() => this.cancel(record.key)}
                                     >
-                                        <a>取消</a>
+                                        <TableButton
+                                            type='cancel'
+                                        />
                                     </Popconfirm>
                                 </OperationArea>
                             ) : (
                                 <OperationArea>
-                                    <OperationButton
+                                    <TableButton
                                         disabled={editingKey !== ''}
-                                        color={TABLE_OPERATION_EDIT}
+                                        type='edit'
                                         onClick={() => this.edit(record.key)}
-                                    >
-                                        编辑
-                                    </OperationButton>
+                                    />
 
                                     <Popconfirm
-                                        title="确定删除吗?"
-                                        onConfirm={() => this.delete(record.key)}
+                                        title="该物料将立即被删除，确定吗?"
+                                        onConfirm={() => {
+                                            this.delete(record.key)
+                                        }}
                                     >
-                                        <OperationButton
+                                        <TableButton
                                             disabled={editingKey !== ''}
-                                            color={TABLE_OPERATION_DELETE}
-                                        >
-                                            删除
-                                        </OperationButton>
+                                            type='delete'
+                                        />
                                     </Popconfirm>
 
                                 </OperationArea>
@@ -319,26 +356,64 @@ class EditableTable extends React.Component {
                 editingKey: '',
             })
         }
+
+        // 传递给父组件的行编辑状态
+        const {onRowEditStateChangedListener} = this.props
+        if (onRowEditStateChangedListener) {
+            onRowEditStateChangedListener(false)
+        }
     };
 
     // 编辑
     edit = (key) => {
         // console.log('edit ', key)
         this.setState({editingKey: key});
+
+        // 传递给父组件的行编辑状态
+        const {onRowEditStateChangedListener} = this.props
+        if (onRowEditStateChangedListener) {
+            onRowEditStateChangedListener(true)
+        }
     }
 
     // 删除
     delete = async (key) => {
-        const {onMaterialListChangedListener} = this.props
+        if (this.state.dataSource.length <= 1) {
+            message.error('删除失败！发货单必须包含至少一条物料记录。')
+            return
+        }
+        const {onMaterialListChangedListener, onRowEditStateChangedListener} = this.props
         const newData = [...this.state.dataSource];
         const index = newData.findIndex(item => key === item.key);
 
         if (index > -1) {
-            const result = await http.get(`/orderMaterial/delete/${newData[index].id}`, {})
-            if (result.ret === '200') {
+            // 如果数据是原始数据，点击删除即 调用接口删除了
+            if (newData[index].id) {
+                const result = await http.get(`/orderMaterial/delete/${newData[index].id}`, {})
+                if (result.ret === '200') {
+                    newData.splice(index, 1)
+                    this.setState({
+                        dataSource: newData.map((data,index)=>({...data, rowIndex: index+1})),
+                        editingKey: ''
+                    });
+
+                    // 传递给外层父组件物料列表
+                    if (onMaterialListChangedListener) {
+                        onMaterialListChangedListener(newData)
+                    }
+
+                    // 传递给父组件的行编辑状态
+                    if (onRowEditStateChangedListener) {
+                        onRowEditStateChangedListener(false)
+                    }
+                } else {
+                    message.error('物料删除失败！请重试。')
+                }
+            } else {
+                // 否则，数据是新建数据尚未提到数据库中，点击删除不调用接口，只从暂存物料列表删除
                 newData.splice(index, 1)
                 this.setState({
-                    dataSource: newData,
+                    dataSource: newData.map((data,index)=>({...data, rowIndex: index+1})),
                     editingKey: ''
                 });
 
@@ -346,9 +421,15 @@ class EditableTable extends React.Component {
                 if (onMaterialListChangedListener) {
                     onMaterialListChangedListener(newData)
                 }
+
+                // 传递给父组件的行编辑状态
+                if (onRowEditStateChangedListener) {
+                    onRowEditStateChangedListener(false)
+                }
             }
+
         } else {
-            message.error('数据提交失败！请稍候重试。')
+            message.error('物料删除失败！请重试。')
         }
     }
 
@@ -358,20 +439,28 @@ class EditableTable extends React.Component {
         const newDataKey = freshId()
         const newData = {
             key: newDataKey,
+            rowIndex: dataSource.length+1,
             material: '',
             description: '--',
+            unit:'--',
             quantity: 1,
         };
         this.setState({
             dataSource: [...dataSource, newData],
             editingKey: newDataKey,
         });
+
+        // 传递给父组件的行编辑状态
+        const {onRowEditStateChangedListener} = this.props
+        if (onRowEditStateChangedListener) {
+            onRowEditStateChangedListener(true)
+        }
     }
 
     // 点击保存事件
     save = (form, record) => {
         // // console.log('handleSave called', row)
-        const {onMaterialListChangedListener} = this.props
+        const {onMaterialListChangedListener, onRowEditStateChangedListener} = this.props
         form.validateFields(async (error, row)=>{
             if (error) return
             const newData = [...this.state.dataSource];
@@ -381,6 +470,7 @@ class EditableTable extends React.Component {
                 ...item,
                 ...row,
             });
+
             this.setState({
                 dataSource: newData,
                 editingKey: ''
@@ -390,16 +480,21 @@ class EditableTable extends React.Component {
             if (onMaterialListChangedListener) {
                 onMaterialListChangedListener(newData)
             }
+
+            // 传递给父组件的行编辑状态
+            if (onRowEditStateChangedListener) {
+                onRowEditStateChangedListener(false)
+            }
         })
     }
 
     // 当物料编号变化时，更新数据集（要动态设置物料名称）
     handleMaterialCodeChanged = ({record, materialCode, materialObject}) => {
         // // console.log('handleMaterialCodeChanged called', record, materialCode, materialObject)
-        const {onMaterialListChangedListener} = this.props
+        // const {onMaterialListChangedListener} = this.props
         const newData = [...this.state.dataSource];
         const index = newData.findIndex(item => record.key === item.key);
-        const item = Object.assign({}, newData[index], {id: record.id}, {material: materialCode}, {description: materialObject.materialName});
+        const item = Object.assign({}, newData[index], {id: record.id}, {material: materialCode}, {description: materialObject.materialName}, {unit: materialObject.units});
         newData.splice(index, 1, item);
         // // console.log('handleMaterialCodeChanged', newData)
         this.setState({dataSource: newData}, () => {
@@ -413,7 +508,7 @@ class EditableTable extends React.Component {
     // 当物料数量变化时，更新数据集（要动态设置物料数量）
     handleMaterialQuantityChanged = (record, quantity) => {
         // // console.log('handleMaterialQuantityChanged called', record, quantity)
-        const {onMaterialListChangedListener} = this.props
+        // const {onMaterialListChangedListener} = this.props
         const newData = [...this.state.dataSource];
         const index = newData.findIndex(item => record.key === item.key);
         const item = Object.assign({}, newData[index], {quantity});
@@ -428,9 +523,10 @@ class EditableTable extends React.Component {
     }
 
     render() {
-        const {dataSource, columns: _columns} = this.state;
+        const {dataSource, columns: _columns, editingKey} = this.state;
         const {
-            order
+            order,
+            userSpecifiedVendor
         } = this.props
         const components = {
             body: {
@@ -456,7 +552,8 @@ class EditableTable extends React.Component {
                     editing: this.isEditing(record),
                     handleSave: this.handleSave,
                     handleMaterialCodeChanged: this.handleMaterialCodeChanged,
-                    handleMaterialQuantityChanged: this.handleMaterialQuantityChanged
+                    handleMaterialQuantityChanged: this.handleMaterialQuantityChanged,
+                    userSpecifiedVendor: userSpecifiedVendor
                 }),
             };
         });
@@ -472,9 +569,12 @@ class EditableTable extends React.Component {
                             marginBottom: '10px',
                             alignSelf: 'flex-start'
                         }}
-                    >{`订单号：${order.number}`}</div>
-                    <Button onClick={this.handleAddButtonClicked} type="primary"
-                            style={{alignSelf: 'center'}}>
+                    >{`系统ID：${order.number}`}</div>
+                    <Button
+                        disabled={editingKey !== ''}
+                        onClick={this.handleAddButtonClicked}
+                        type="primary"
+                        style={{alignSelf: 'center'}}>
                         增加物料信息
                     </Button>
                 </TitleContainerView>
@@ -482,7 +582,7 @@ class EditableTable extends React.Component {
                     className="data-board-mini-table"
                     components={components}
                     rowClassName={() => 'editable-row'}
-                    bordered
+                    bordered={false}
                     dataSource={dataSource}
                     columns={columns}
                     pagination={false}
@@ -502,6 +602,7 @@ class _EditShippingMaterialModal extends Component {
         this.state = {
             visible: false,
             confirmLoading: false,
+            rowEditState: false, // 列是否处于编辑状态
 
             //
             materialList: [],// 选择增加的物料列表
@@ -532,9 +633,16 @@ class _EditShippingMaterialModal extends Component {
 
     // 物料列表变化的监听
     onMaterialListChangedListener = (materialList) => {
-        // console.log('onMaterialListChangedListener called', materialList)
+        console.log('onMaterialListChangedListener called', materialList)
         this.setState({
             materialList
+        })
+    }
+
+    // 行 编辑状态 切换的监听
+    onRowEditStateChangedListener = (rowEditState) => {
+        this.setState({
+            rowEditState,
         })
     }
 
@@ -557,7 +665,7 @@ class _EditShippingMaterialModal extends Component {
             confirmLoading: true,
         });
 
-        // 网络请求
+        // 网络请求: 更新
         let params = {
             id: order.id,
             materialList: materialList.map(material => ({
@@ -578,6 +686,7 @@ class _EditShippingMaterialModal extends Component {
             if (this.props.onOkClickedListener) {
                 this.props.onOkClickedListener('to_be_shipped_infos', {})
             }
+            message.success('操作成功！')
         } else {
             message.error('数据提交失败！请稍候重试。')
         }
@@ -585,6 +694,8 @@ class _EditShippingMaterialModal extends Component {
         this.setState({
             visible: false,
             confirmLoading: false,
+            rowEditState: false, // 列是否处于编辑状态
+
             //注意清空变量
             materialList: [],// 选择增加的物料列表
         });
@@ -596,6 +707,7 @@ class _EditShippingMaterialModal extends Component {
         this.setState({
             visible: false,
             confirmLoading: false,
+            rowEditState: false, // 列是否处于编辑状态
 
             // 注意清空state变量
             materialList: [],// 选择增加的物料列表
@@ -613,38 +725,50 @@ class _EditShippingMaterialModal extends Component {
         } else {
             result = await http.get(requestUrl)
         }
-        // console.log(`request: ${requestUrl}`, 'params:', params, 'result:', result)
+        console.log(`request: ${requestUrl}`, 'params:', params, 'result:', result)
         return result && result.ret === '200'
     }
 
     render() {
-        const {modalType, order} = this.props
-        const {visible, confirmLoading} = this.state;
-
+        const {modalType, order, userInfo} = this.props
+        const {visible, confirmLoading, rowEditState, materialList} = this.state;
+        const userSpecifiedVendor = _.get(userInfo, 'vendor')
         return (
             <div>
                 <Modal
                     title={modalTitleMap[modalType]}
                     visible={visible}
                     onOk={this.handleOk}
-                    confirmLoading={confirmLoading}
+                    // okButtonProps={{disabled: rowEditState}}
+                    // confirmLoading={confirmLoading}
                     onCancel={this.handleCancel}
+                    cancelButtonProps={{disabled: materialList.length === 0}}
                     destroyOnClose={true}
                     width='50%'
                     bodyStyle={{width: '100%'}}
+                    keyboard={false}
+                    maskClosable={false}
+                    closable={false}
+                    footer={<FooterView>
+                        <Button
+                            type="primary"
+                            style={{marginRight: '6px'}}
+                            disabled={rowEditState}
+                            onClick={this.handleOk}
+                            loading={confirmLoading}
+                        >确定</Button>
+                    </FooterView>}
                 >
                     <FormWrappedTable
                         order={order}
+                        userSpecifiedVendor={userSpecifiedVendor}
                         onMaterialListChangedListener={this.onMaterialListChangedListener}
+                        onRowEditStateChangedListener={this.onRowEditStateChangedListener}
                     />
                 </Modal>
             </div>
         );
     }
-}
-
-function isEmpty(testString) {
-    return !testString || testString.length === 0 || testString === ''
 }
 
 export const EditShippingMaterialModal = _EditShippingMaterialModal;
@@ -657,9 +781,8 @@ const InputContainerView = styled.div`
   width: 100%;
   height: 100%;
   padding: 10px 10px;
-  // border: #5a8cff 2px solid;
+  // border: #48b2f7 2px solid;
 `
-
 const TitleContainerView = styled.div`
   display: flex;
   flex-direction: row;
@@ -669,18 +792,22 @@ const TitleContainerView = styled.div`
   height: 20%;
   padding: 10px 10px;
   margin: 0px 10px 10px 10px;
-  // border: #5a8cff 2px solid;
+  // border: #48b2f7 2px solid;
 `
-
 const OperationArea = styled.div`
   display: flex;
   flex-direction: row;
   justify-content: center;
   align-items: center;
 `
-
-const OperationButton = styled.a`
-  margin-left:4%; 
-  margin-right:4%; 
-  color:${p => (p.disabled ? 'gray' : p.color)};
+const FooterView = styled.div`
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
+  height: 5%;
+  padding: 0% 2%;
+  // margin: 0px 10px 10px 10px;
+  // border: #48b2f7 2px solid;
 `

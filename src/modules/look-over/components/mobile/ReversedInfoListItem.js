@@ -8,10 +8,7 @@ const _ = require('lodash')
 class _ReversedInfoListItem extends Component {
     render() {
         const { data, rowID } = this.props
-        // // console.log('this.props = ',this.props)
         let keys = _.keys(data)
-        // let index = keys.findIndex(key => key === 'id')
-        // keys.splice(index,1)
         return (
             <RootView>
                 <IndicatorTopBar color={generateRandomColor(rowID)}/>
@@ -103,11 +100,12 @@ const SeparateLine = styled.div`
 `
 
 const TitleText = styled.div`
-    color: rgba(54, 53, 53, 1);
+    color: #333;
     font-size: 14px;
 `
 
 const ContentContentText = styled.div`
-    color: rgba(51, 51, 51, 1);
+    color: #333;
     font-size: 14px;
+    font-weight:bold;
 `

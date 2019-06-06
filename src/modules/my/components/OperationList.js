@@ -15,7 +15,7 @@ class OperationList extends Component {
                             <OpLeft>
                                 {item.icon}
                                 <span style={{ 
-                                    marginLeft: '1rem', 
+                                    marginLeft: '0.5rem', 
                                     fontSize: '1rem' 
                                     }}
                                 >{item.text}</span>

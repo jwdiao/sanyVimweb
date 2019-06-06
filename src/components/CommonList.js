@@ -11,7 +11,8 @@ import {DispatchItem} from "../modules/dispatch/components/DispatchItem";
 import {GoodsTransferListItem} from "../modules/look-over/components/mobile/GoodsTransferListItem";
 import {InventoryInfoListItem} from "../modules/look-over/components/mobile/InventoryInfoListItem";
 import {ReversedInfoListItem} from "../modules/look-over/components/mobile/ReversedInfoListItem";
-import { http, ORDER_STATUS, INVENTORY_STATUS, dispatchStatusList, reservoirLibraryList, Durian } from '../utils'
+import { http, INVENTORY_STATUS, dispatchStatusList, reservoirLibraryList, Durian } from '../utils'
+import { NoContent } from './NoContent'
 
 const PAGE_SIZE = 5
 
@@ -32,8 +33,8 @@ class _CommonList extends Component {
             // page: 1,
             // pageSize: 4,
             height: document.documentElement.clientHeight,
-            useBodyScroll: false,
             hasMore: true,
+            footerRemoved: false,
 
             // 下拉刷新/上拉加载相关state
             currentPage:1,
@@ -48,10 +49,20 @@ class _CommonList extends Component {
     componentWillMount() {
         console.log('===componentWillMount===called')
     }
+    componentWillUnmount() {
+        console.log('===componentWillUnmount===called')
+        if (this.timer) {
+            clearTimeout(this.timer);
+          }
+    }
 
     async componentDidMount() {
         console.log('===componentDidMount===called')
-        const hei = this.state.height - ReactDOM.findDOMNode(this.lv).offsetTop;
+        let hei = 0;
+        if (this.lv) {
+            hei = this.state.height - ReactDOM.findDOMNode(this.lv).offsetTop;
+        }
+        
         let { condition } = this.props;
         this.setState({
             currentPage:1,
@@ -67,17 +78,6 @@ class _CommonList extends Component {
             isLoading: false,
         });
     }
-
-    componentDidUpdate() {
-        console.log('===componentDidUpdate===called')
-
-        if (this.state.useBodyScroll) {
-            document.body.style.overflow = 'auto';
-        } else {
-            document.body.style.overflow = 'hidden';
-        }
-    }
-
 
     async componentWillReceiveProps(nextProps) {
         console.log('===componentWillReceiveProps===called')
@@ -105,6 +105,17 @@ class _CommonList extends Component {
         let data = []
         const {currentPage, totalPages} = this.state
         if (currentPage > totalPages){
+            this.setState({
+                hasMore: false,
+            })
+            if (this.timer) {
+                clearTimeout(this.timer);
+            }
+            this.timer = setTimeout(() => {
+                this.setState({
+                    footerRemoved: true
+                });
+            }, 2000);
             return data
         }
 
@@ -138,10 +149,12 @@ class _CommonList extends Component {
             case 'TransferList':
                 params = {
                     style:3,// 1: 配送出库 2: 其他出库 3：移库
+                    supplierCode: supplierCode,
                     page:currentPage,
                     pageSize:PAGE_SIZE,
                 }
                 requestUrl = '/warehouseOut/warehouseOutList'
+                console.log('warehouse out request params', params);
                 const resultTransferList = await http.post(requestUrl,params)
                 const {
                     content: contentTransferList,
@@ -157,7 +170,7 @@ class _CommonList extends Component {
                                 quantity: warehouseOutMaterial.materiaNumber,
                                 sourcePosition:reservoirLibraryList.filter(library=>library.value === warehouseOutMaterial.sourceWarehouse)[0].label,
                                 destPosition:reservoirLibraryList.filter(library=>library.value === warehouseOutMaterial.targetWarehouse)[0].label,
-                                time: warehouseOutMaterial.createTime,
+                                units: warehouseOutMaterial.units,
                                 reason:warehouseOutMaterial.reason,
                             }
                         })
@@ -166,7 +179,8 @@ class _CommonList extends Component {
                             code: originalData.code,
                             status: originalData.status,
                             number: originalData.status === 4 ? originalData.moveQualifiedCode : originalData.moveBadCode,
-                            vmiFactory: originalData.factoryCode,
+                            moveName: originalData.status === 4 ? originalData.moveQualifiedName : originalData.moveBadName,
+                            createTime: moment(originalData.createTime).format('YYYY-MM-DD HH:mm'),
                             inventoryState: dispatchStatusList.filter(status=>status.value === originalData.status)[0].label,
                             materials
                         }
@@ -184,10 +198,12 @@ class _CommonList extends Component {
             case 'DispatchList':
                 params = {
                     style:dispatchType === 'deliver'?1:2,// 1: 配送出库 2: 其他出库 3：移库
+                    supplierCode: supplierCode,
                     page:currentPage,
                     pageSize:PAGE_SIZE,
                 }
                 requestUrl = '/warehouseOut/warehouseOutList'
+                console.log('warehouse out request params', params);
                 const resultDispatchList = await http.post(requestUrl,params)
                 const {
                     content: contentDispatchList,
@@ -196,12 +212,13 @@ class _CommonList extends Component {
                 if (contentDispatchList.length > 0) {
                     data = contentDispatchList.map(originalData => {
                         const materials = originalData.warehouseOutMateriaList.map(warehouseOutMaterial=>{
+                            console.log('warehouseOutMaterial', warehouseOutMaterial);
                             return {
                                 id: warehouseOutMaterial.id,
                                 material:warehouseOutMaterial.materiaCode,
                                 materialDescription: warehouseOutMaterial.materialName,
                                 quantity: warehouseOutMaterial.materiaNumber,
-                                time: warehouseOutMaterial.createTime
+                                units: warehouseOutMaterial.units,
                             }
                         })
                         return {
@@ -209,7 +226,8 @@ class _CommonList extends Component {
                             code: originalData.code,
                             status: originalData.status,
                             number: dispatchType === 'deliver' ? originalData.outCode : originalData.otherOutCode,
-                            vmiFactory: originalData.factoryCode,
+                            outName: dispatchType === 'deliver' ? originalData.outName : originalData.otherOutName,
+                            createTime: moment(originalData.createTime).format('YYYY-MM-DD HH:mm'),
                             inventoryState: dispatchStatusList.filter(status=>status.value === originalData.status)[0].label,
                             materials
                         }
@@ -233,7 +251,7 @@ class _CommonList extends Component {
                 if (material && material !== '') {
                     params.materiaName = material
                 }
-                if (status && status !== -1) {
+                if (status && status > 0) {
                     params.status = status
                 }
 
@@ -249,11 +267,14 @@ class _CommonList extends Component {
                 if (gtReports.length > 0) {
                     data = gtReports.map(report => {
                         return {
+                            code: report.code,
                             material: report.materiaCode,
                             materialDescription: report.materialName,
+                            units: report.units,
                             qualifiedQuantity: report.qualifiedNumber,
                             unqualifiedQuantity: report.badNumber,
                             // onTheWayQuantity: report.,
+                            reason: report.reason,
                             status: INVENTORY_STATUS[report.status],
                             createdAt: moment(report.createTime).format('YYYY-MM-DD HH:mm'),
                         }
@@ -290,10 +311,11 @@ class _CommonList extends Component {
                         return {
                             material: report.materiaCode,
                             materialDescription: report.materialName,
+                            units: report.units,
                             qualifiedQuantity: report.qualifiedNumber,
                             unqualifiedQuantity: report.badNumber,
                             onTheWayQuantity: report.onTheWayNum,
-                            createdAt: moment(report.createTime).format('YYYY-MM-DD HH:mm'),
+                            // createdAt: moment(report.createTime).format('YYYY-MM-DD HH:mm'),
                         }
                     })
                 }
@@ -307,37 +329,47 @@ class _CommonList extends Component {
 
             // 我的-报表信息-冲销信息
             case 'ReversedInfoList':
-                for (let i = 0; i < 10; i++) {
-                    data.push({
-                        vmiFactory: i%2 === 0 ? '供应商A' :'供应商B',
-                        inventoryState: '待收货',
-                        material:'支重轮',
-                        materialDescription: 'NEW2019-3009纯钢',
-                        quantity:120,
-                        generatedNumber: `SC-${i + 1}`,//生成号码
-                        generatedDate: moment().format('YYYY-MM-DD HH:mm'),// 生成日期
-                        reversedNumber: `CX-${i + 1}`,//冲销号码
-                        reversedDate: moment().format('YYYY-MM-DD HH:mm'),// 冲销号日期
-                    })
-                }
+                // for (let i = 0; i < 10; i++) {
+                //     data.push({
+                //         vmiFactory: i%2 === 0 ? '供应商A' :'供应商B',
+                //         inventoryState: '待收货',
+                //         material:'支重轮',
+                //         materialDescription: 'NEW2019-3009纯钢',
+                //         quantity:120,
+                //         generatedNumber: `SC-${i + 1}`,//生成号码
+                //         generatedDate: moment().format('YYYY-MM-DD HH:mm'),// 生成日期
+                //         reversedNumber: `CX-${i + 1}`,//冲销号码
+                //         reversedDate: moment().format('YYYY-MM-DD HH:mm'),// 冲销号日期
+                //     })
+                // }
                 break
 
             default:
                 break
         }
         if (orderStatus > 0) {
-            const result = await http.post('/order/find/all', {status:orderStatus, page:currentPage, pageSize:PAGE_SIZE})
-            console.log('result:', result);
+            
+            let params =  {
+                status:orderStatus, 
+                supplierCode: supplierCode,
+                page:currentPage, 
+                pageSize:PAGE_SIZE
+            }
+            const result = await http.post('/order/find/all', params)
+            // console.log('result:', result);
             const {content, totalElements} = result.data
             if (content.length > 0) {
                 data = content.map(i => {
                     return {
                         id: i.id,
-                        number: i.code,
-                        vmiFactory: i.supplierName,
-                        inventoryState: ORDER_STATUS[i.status],
-                        sender: i%2 === 0 ? '李四' :'张三',
-                        sentTime: moment(i.saveTime).format('YYYY-MM-DD HH:mm:ss'),
+                        code: i.code,
+                        receiveCode:i.receiveCode,
+                        otherReceiveCode:i.otherReceiveCode,
+                        deliveryName: i.deliveryName,
+                        otherReceiveName: i.otherReceiveName,
+                        transportTime: moment(i.transportTime).format('YYYY-MM-DD'),
+                        receiveTime: moment(i.receiveTime).format('YYYY-MM-DD HH:mm:ss'),
+                        otherReceiveTime: moment(i.otherReceiveTime).format('YYYY-MM-DD HH:mm:ss'),
                     }
                 })
             }
@@ -365,6 +397,7 @@ class _CommonList extends Component {
     };
 
     onEndReached = async (event) => {
+        console.log('===CommonList onEndReached===called')
         // load new data
         // hasMore: from backend data, indicates whether it is the last page, here is false
         if (this.state.isLoading && !this.state.hasMore) {
@@ -392,7 +425,13 @@ class _CommonList extends Component {
 
     reverseOrder = (id) => {
         console.log(`reverse order item ${id}`);
-        http.get(`/order/update/offset/other/${id}`)
+        const user = Durian.get('user');
+        let params = {
+            id: id,
+            otherOffsetName: user.userName,
+        }
+        console.log('order offset update params', params);
+        http.post('/order/update/offset/other', params)
             .then(result => {
                 console.log(result);
                 if (result.ret === '200' && result.msg === '成功') {
@@ -421,7 +460,7 @@ class _CommonList extends Component {
         const supplierCode = user.vendor.value;
         const { dispatchType } = this.props
         console.log('is dispatch?' + dispatchType);
-        const style = dispatchType === 'other' ? 2:1;//目前只有其他出库有冲销，普通出库不显示冲销按钮，不会执行该方法,如需增加普通出库冲销，需重新设计style值的获取方法。
+        const style = dispatchType === 'others' ? 1:2;//目前只有其他出库有冲销，普通出库不显示冲销按钮，不会执行该方法,如需增加普通出库冲销，需重新设计style值的获取方法。
 
         const reverseItem = _.find(this.state.rData, r => r.id === id);
         console.log('reverseItem', reverseItem); 
@@ -431,6 +470,7 @@ class _CommonList extends Component {
             code: reverseItem.code,
             status: reverseItem.status,
             supplierCode:supplierCode,
+            operatorName: user.userName,
         }
         console.log('params:', params);
         http.post('/warehouseOut/warehouseOutOffSet', params)
@@ -546,25 +586,32 @@ class _CommonList extends Component {
     }
 
     render() {
+        const {listType} = this.props
+        
+        const { currentPage, rData } = this.state
         return (
-            <RootView>
+            <RootView style={this.props.style} withSearchBar={this.props.withSearchBar} withSubTabBar={listType !== 'TransferList'}>
+            {(currentPage===1 && rData.length === 0) ? 
+                <NoContent /> : 
                 <ListView
-                    key={this.state.useBodyScroll ? '0' : '1'}
+                    className={'refresh-list-view-style'}
                     ref={el => this.lv = el}
                     dataSource={this.state.dataSource}
                     renderFooter={    //renderFooter就是下拉时候的loading效果，这里的内容可以自己随需求更改
-                        () => (
-                            <div style={{ padding: 30, textAlign: 'center' }}>
-                                {this.state.isLoading ? '加载中...' : '加载完毕'}
-                            </div>
-                        )
+                        () => {
+                           if (!this.state.footerRemoved) {
+                                return (
+                                <div style={{ padding: 10, textAlign: 'center' }}>
+                                    {this.state.isLoading ? '加载中...' : ''}
+                                </div>
+                                )
+                           }
+                        } 
+                        
                     }
                     renderRow={this.constructRowComponent()}   //渲染你上边写好的那个row
-                    useBodyScroll={this.state.useBodyScroll}
-                    style={this.state.useBodyScroll ? {
-                    } : {
-                        height: this.state.height,
-                        // border: 'red 2px solid',
+                    style={{
+                        height: '100%'
                     }}
                     pullToRefresh={<PullToRefresh
                         refreshing={this.state.refreshing}
@@ -573,6 +620,7 @@ class _CommonList extends Component {
                     onEndReached={this.onEndReached}
                     pageSize={PAGE_SIZE}    //每次下拉之后显示的数据条数
                 />
+            }
             </RootView>
         );
     }
@@ -582,6 +630,5 @@ export const CommonList = _CommonList;
 
 const RootView = styled.div`
     background:#eee;
-    margin-top:-10px;
-    height: calc(100vh - 60px);
+    height: ${p=> p.withSearchBar? 'calc(100vh - 190px)' : (p=> p.withSubTabBar? 'calc(100vh - 150px)' : 'calc(100vh - 106px)')};
 `

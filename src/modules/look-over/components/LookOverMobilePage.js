@@ -1,6 +1,6 @@
 import React, {Component} from 'react';
 import styled from "styled-components";
-import {TabBar, Tabs} from 'antd-mobile';
+import {Tabs} from 'antd-mobile';
 import {CommonHeader} from "../../../components";
 import {GoodsTransferPage} from "./mobile/GoodsTransferPage";
 import {InventoryInfoPage} from "./mobile/InventoryInfoPage";
@@ -82,21 +82,6 @@ export const LookOverMobilePage = _LookOverMobilePage;
 const RootView = styled.div`
     display: flex;
     flex-direction: column;
-    height: calc(100vh);
-    overflow: hidden;
-    justify-content: flex-start;
+    flex:1;
 `
 
-const RootContentView = styled.div`
-    background: #fff;
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    height:calc(100vh - 92px);
-    margin:16px;
-    justify-content: center;
-    align-items: center;
-    border-radius: 4px;
-    box-shadow:0 10px 16px 8px RGBA(229, 233, 243, 1);
-   //  border: 2px black solid;
-`

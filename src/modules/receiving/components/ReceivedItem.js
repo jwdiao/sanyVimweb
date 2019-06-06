@@ -1,7 +1,8 @@
 import React, {Component} from 'react';
 import styled from "styled-components";
+import moment from 'moment';
 import freshId from 'fresh-id'
-import {receivedItemsMap, generateRandomColor, http} from "../../../utils";
+import {receivedItemsMap, receivedMaterialMap, generateRandomColor, http} from "../../../utils";
 import {Collapse} from "antd";
 
 const Panel = Collapse.Panel;
@@ -23,20 +24,18 @@ class _ReceivedItem extends Component {
 
     async componentWillMount () {
         const { data } = this.props
-        const {number: code, sentTime, sender } = data
-        // console.log('----------------data----------------------------',data);
-        // console.log(code);
-        // console.log('---------------------code-----------------------',code);
+        const {code } = data
         const dbMat = await http.get(`/orderMaterial/find/ordercode/${code}`);
         let mats = dbMat.data.map(m => {
             return {
+                units: m.units,
                 material: m.materiaCode,
                 materialDescription: m.materiaName,
-                quantity:m.totalNumber,
-                sentTime,
-                sender,
-                inInventoryQuantity:m.qualifiedNumber,
+                quantity:m.materiaNum,
+                inInventoryQuantity:m.totalNumber,
                 qualifiedQuantity:m.qualifiedNumber,
+                receiveName: m.receiveName,
+                receiveTime: moment(m.receiveTime).format('YYYY-MM-DD HH:mm:ss'),
             }
         });
         this.setState({
@@ -46,7 +45,6 @@ class _ReceivedItem extends Component {
 
     render() {
         const { data, rowID } = this.props
-        const { id } = data
         let keys = _.keys(data)
         let index = keys.findIndex(key => key === 'id')
         keys.splice(index,1)
@@ -76,22 +74,24 @@ class _ReceivedItem extends Component {
                     <Panel
                         header={
                             <HeaderView>
-                                {
-                                    keys.slice(0,3).map((_key, index)=>{
-                                        // console.log('_key, index', _key, index)
-                                        return (
-                                            <ItemWrapper
-                                                key={_key}
-                                                style={{flexDirection:'row'}}>
-                                                <ItemView>
-                                                    <TitleText style={{display:'flex', flex:0.3, textAlign:'justify'}}>{receivedItemsMap[_key]}</TitleText>
-                                                    <HeaderContentText style={{display:'flex', flex:0.7}}>{data[_key]}</HeaderContentText>
-                                                </ItemView>
-                                            </ItemWrapper>
-
-                                        )
-                                    })
-                                }
+                                <ItemWrapper style={{flexDirection:'row'}}>
+                                    <ItemView>
+                                        <TitleText style={{display:'flex', flex:0.3, textAlign:'justify'}}>{receivedItemsMap['code']}</TitleText>
+                                        <HeaderContentText style={{display:'flex', flex:0.7}}>{data['code']}</HeaderContentText>
+                                    </ItemView>
+                                </ItemWrapper>
+                                <ItemWrapper style={{flexDirection:'row'}}>
+                                    <ItemView>
+                                        <TitleText style={{display:'flex', flex:0.3, textAlign:'justify'}}>{receivedItemsMap['receiveCode']}</TitleText>
+                                        <HeaderContentText style={{display:'flex', flex:0.7}}>{data['receiveCode']}</HeaderContentText>
+                                    </ItemView>
+                                </ItemWrapper>
+                                <ItemWrapper style={{flexDirection:'row'}}>
+                                    <ItemView>
+                                        <TitleText style={{display:'flex', flex:0.3, textAlign:'justify'}}>{receivedItemsMap['receiveTime']}</TitleText>
+                                        <HeaderContentText style={{display:'flex', flex:0.7}}>{data['receiveTime']}</HeaderContentText>
+                                    </ItemView>
+                                </ItemWrapper>
                             </HeaderView>
                         }
                         key="1"
@@ -101,7 +101,9 @@ class _ReceivedItem extends Component {
                             {
                                 this.state.materials.map((material, mIndex)=>{
                                     // console.log('_key, index', _key, index)
+                                    const { units } = material;
                                     let _keys = _.keys(material)
+                                    _.remove(_keys, i => i === 'units');
                                     let itemStyle = {
                                         display:'flex', 
                                         flex:1, 
@@ -119,12 +121,16 @@ class _ReceivedItem extends Component {
                                         >
                                             {
                                                 _keys.map((key,index)=>{
+                                                    let val = material[key];
+                                                    if (_.indexOf(['quantity', 'inInventoryQuantity', 'qualifiedQuantity'], key) >= 0) {
+                                                        val = val + ' ' + units;
+                                                    }
                                                     return (
                                                         <ItemWrapper
                                                             key={key}>
                                                             <ItemView>
-                                                                <TitleText>{receivedItemsMap[key]}</TitleText>
-                                                                <ContentContentText>{material[key]}</ContentContentText>
+                                                                <TitleText>{receivedMaterialMap[key]}</TitleText>
+                                                                <ContentContentText>{val}</ContentContentText>
                                                             </ItemView>
                                                             <SeparateLine/>
                                                         </ItemWrapper>
@@ -156,19 +162,7 @@ const RootView = styled.div`
     justify-content: center;
     align-items: center;
     border-radius: 4px;
-    position:relative;
-    overflow:hidden;
-    padding-bottom:16px;
-    ::before {
-        content: ' ';
-        width: 100%;
-        height: 0;
-        position: absolute;
-        bottom: -4px;
-        border-bottom: 8px dotted #eee;
-        left: 4px;
-        right: 4px;
-    }
+    
 `
 
 const IndicatorLeftBar = styled.div`
@@ -187,8 +181,8 @@ const HeaderView = styled.div`
     flex-direction: column;
     z-index: 100;
     width: 100%;
-    height: 110px;
-    padding: 10px 0;
+    //height: 96px;
+    padding: 0 10px 20px 0;
     justify-content: center;
 `
 
@@ -198,6 +192,19 @@ const ContentView = styled.div`
     z-index: 1;
     width: 100%;
     justify-content: center;
+    position:relative;
+    overflow:hidden;
+    padding-bottom:16px;
+    ::before {
+        content: ' ';
+        width: 100%;
+        height: 0;
+        position: absolute;
+        bottom: -4px;
+        border-bottom: 8px dotted #eee;
+        left: 4px;
+        right: 4px;
+    }
 `
 
 const ItemWrapper = styled.div`
@@ -223,23 +230,25 @@ const SeparateLine = styled.div`
 `
 
 const TitleText = styled.div`
-    color: rgba(54, 53, 53, 1);
+    color: #333;
     font-size: 14px;
 `
 
 const ContentContentText = styled.div`
-    color: rgba(51, 51, 51, 1);
+    color: #333;
     font-size: 14px;
+    font-weight:bold;
 `
 
 const HeaderContentText = styled.div`
-    color: rgba(160, 157, 157, 1);
-    font-size: 14px;
+color: #333;
+font-size: 14px;
+font-weight:bold;
 `
 const ExpandIcon = styled.div`
     width:16px;
 `
 const ExpandIconItem = styled.div`
     height:3px;
-    border-top:1px solid #bbb;
+    border-top:1px solid #333;
 `

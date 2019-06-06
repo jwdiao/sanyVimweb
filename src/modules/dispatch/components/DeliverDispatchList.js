@@ -1,6 +1,3 @@
-/**
- *出库-配送出库
- */
 import React, {Component} from 'react';
 import styled from "styled-components";
 import {DispatchList} from "./DispatchList";
@@ -20,6 +17,7 @@ class _DeliverDispatchList extends Component {
 export const DeliverDispatchList = _DeliverDispatchList;
 
 const RootView = styled.div`
-    background:#eee;
-    height: calc(100vh - 60px);
+    display:flex;
+    flex:1;
+    flex-direction: column;
 `

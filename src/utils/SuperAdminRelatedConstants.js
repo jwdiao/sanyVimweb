@@ -38,7 +38,7 @@ export const sanyFactoryTableColumns = [
         title: 'SANY工厂编号',
         dataIndex: 'sanyId',
         width: '15%',
-        editable: true,
+        editable: false,
     },
     {
         title: 'SANY工厂名称',
@@ -55,7 +55,7 @@ export const sanyFactoryTableColumns = [
     {
         title: '创建时间',
         dataIndex: 'createdAt',
-        width: '16%',
+        width: '25%',
         editable: false,
     }
 ]
@@ -71,7 +71,7 @@ export const vendorsTableColumns = [
     {
         title: '供应商编号',
         dataIndex: 'vendorId',
-        width: '15%',
+        width: '20%',
         editable: true,
     },
     {
@@ -89,7 +89,7 @@ export const vendorsTableColumns = [
     {
         title: '创建时间',
         dataIndex: 'createdAt',
-        width: '16%',
+        width: '25%',
         editable: false,
     }
 ]
@@ -106,7 +106,7 @@ export const userTableColumns = [
         title: '用户名',
         dataIndex: 'userName',
         width: '10%',
-        editable: true,
+        editable: false,
     },
     {
         title: '姓名',
@@ -117,7 +117,13 @@ export const userTableColumns = [
     {
         title: '手机号',
         dataIndex: 'mobile',
-        width: '12%',
+        width: '15%',
+        editable: true,
+    },
+    {
+        title: '密码',
+        dataIndex: 'password',
+        width: '10%',
         editable: true,
     },
     {
@@ -141,7 +147,7 @@ export const userTableColumns = [
     {
         title: '创建时间',
         dataIndex: 'createdAt',
-        width: '18%',
+        width: '15%',
         editable: false,
     }
 ]
@@ -155,15 +161,15 @@ export const basicMaterialTypeTableColumns = [
         editable: false,
     },
     {
-        title: '物料编号',
+        title: '物料编码',
         dataIndex: 'material',
-        width: '15%',
-        editable: true,
+        width: '20%',
+        editable: false,
     },
     {
-        title: '物料',
+        title: '物料描述',
         dataIndex: 'materialDescription',
-        width: '15%',
+        width: '20%',
         editable: true,
     },
     {
@@ -181,24 +187,11 @@ export const basicMaterialTypeTableColumns = [
     {
         title: '创建时间',
         dataIndex: 'createdAt',
-        width: '20%',
+        width: '25%',
         editable: false,
     }
 ]
 
-// 单位列表（应从后端获取）
-export const unitList = [
-    {
-        key:'unit_t',
-        value:'t',
-        label:'t'
-    },
-    {
-        key:'unit_kg',
-        value:'kg',
-        label:'kg'
-    }
-]
 
 // 角色列表
 export const roleList = [
@@ -227,43 +220,4 @@ export const roleList = [
         value:5,
         label:'供应商管理员'
     }
-]
-
-// 供应商列表（应从后端获取）
-export const vendorList = [
-    {
-        key: 'vendor1',
-        value: '供应商-1',
-        label: '供应商-1'
-    },
-    {
-        key: 'vendor2',
-        value: '供应商-2',
-        label: '供应商-2'
-    },
-    {
-        key: 'vendor3',
-        value: '供应商-3',
-        label: '供应商-3'
-    }
-]
-
-// 工厂列表（应从后端获取）
-export const factoryList = [
-    {
-        key: 'factory1',
-        value: '工厂-1',
-        label: '工厂-1'
-    },
-    {
-        key: 'factory2',
-        value: '工厂-2',
-        label: '工厂-2'
-    },
-    {
-        key: 'factory3',
-        value: '工厂-3',
-        label: '工厂-3'
-    }
-
 ]

@@ -1,37 +1,37 @@
 export const shippingMenuItems = [
-    // 1-5为信息管理的条目
+    // 1-4为信息管理的条目
     {
         key: 'vendor_material_type_management',
-        title: '物料类型管理',
+        title: '货源清单管理',
         parentTitle: '信息管理',
         iconType: 'user'
     },
     {
         key: 'to_be_shipped_infos',
-        title: '待发货信息查询',
+        title: '发货管理',
         parentTitle: '信息管理',
         iconType: 'user'
     },
     {
         key: 'shipped_infos',
-        title: '工厂发货信息',
+        title: '在途管理',
         parentTitle: '信息管理',
         iconType: 'user'
     },
     {
         key: 'reversed_infos',
-        title: '已冲销发货信息',
-        parentTitle: '信息管理',
-        iconType: 'user'
-    },
-    {
-        key: 'vmi_received_infos',
-        title: 'VMI收货信息',
+        title: '冲销管理',
         parentTitle: '信息管理',
         iconType: 'user'
     },
 
-    // 6-8为报表管理的条目
+    // 5-8为报表管理的条目
+    {
+        key: 'vmi_received_infos',
+        title: '收货信息查询',
+        parentTitle: '报表管理',
+        iconType: 'user'
+    },
     {
         key: 'goods_transfer_query',
         title: '货物移动查询',
@@ -52,7 +52,7 @@ export const shippingMenuItems = [
     },
 ]
 
-// 信息管理-物料类型管理
+// 信息管理-货源清单管理
 export const materialTypeTableColumns = [
     {
         title: '序号',
@@ -61,34 +61,40 @@ export const materialTypeTableColumns = [
         editable: false,
     },
     {
-        title: '物料编号',
-        dataIndex: 'material',
+        title: '供应商编码',
+        dataIndex: 'vendorCode',
         width: '8%',
         editable: false,
     },
     {
-        title: '物料',
-        dataIndex: 'materialDescription',
+        title: '供应商名称',
+        dataIndex: 'vendorName',
+        width: '15%',
+        editable: false,
+    },
+    {
+        title: '物料编码',
+        dataIndex: 'material',
         width: '10%',
         editable: false,
     },
     {
-        title: '供应商',
-        dataIndex: 'vendorName',
+        title: '物料描述',
+        dataIndex: 'materialDescription',
         width: '15%',
-        editable: true,
+        editable: false,
+    },
+    {
+        title: '单位',
+        dataIndex: 'unit',
+        width: '5%',
+        editable: false,
     },
     {
         title: '客户工厂',
         dataIndex: 'clientFactory',
         width: '12%',
         editable: true,
-    },
-    {
-        title: '单位',
-        dataIndex: 'unit',
-        width: '8%',
-        editable: false,
     },
     {
         title: '状态',
@@ -104,7 +110,7 @@ export const materialTypeTableColumns = [
     }
 ]
 
-// 信息管理-待发货信息
+// 信息管理-发货管理
 export const toBeShippedTableColumns = [
     {
         title: '序号',
@@ -113,21 +119,15 @@ export const toBeShippedTableColumns = [
         editable: false,
     },
     {
-        title: '号码',
+        title: '系统ID',
         dataIndex: 'number',
         width: '15%',
         editable: false,
     },
-    // {
-    //     title: '供应商',
-    //     dataIndex: 'vendorName',
-    //     width: '10%',
-    //     editable: true,
-    // },
     {
         title: '客户工厂',
         dataIndex: 'clientFactory',
-        width: '10%',
+        width: '15%',
         editable: true,
     },
     {
@@ -136,33 +136,27 @@ export const toBeShippedTableColumns = [
         width: '10%',
         editable: false,
     },
-    // {
-    //     title: '物料',
-    //     dataIndex: 'material',
-    //     width: '12%',
-    //     editable: true,
-    // },
-    // {
-    //     title: '物料总数',
-    //     dataIndex: 'materialAmount',
-    //     width: '12%',
-    //     editable: true,
-    // },
     {
         title: '暂存时间',
         dataIndex: 'temporaryStoreTime',
-        width: '25%',
+        width: '15%',
         editable: false,
     },
     {
-        title: '运输周期',
-        dataIndex: 'transportPeriod',
+        title: '预到日期',
+        dataIndex: 'expectReachDate',
         width: '10%',
         editable: true,
+    },
+    {
+        title: '操作人',
+        dataIndex: 'operator',
+        width: '10%',
+        editable: false,
     }
 ]
 
-// 信息管理-工厂发货信息
+// 信息管理-在途管理
 export const shippedTableColumns = [
     {
         title: '序号',
@@ -170,86 +164,22 @@ export const shippedTableColumns = [
         width: '5%',
         editable: true,
     },
-    {
-        title: '号码',
-        dataIndex: 'number',
-        width: '15%',
-        editable: true,
-    },
     // {
-    //     title: '供应商',
-    //     dataIndex: 'vendorName',
-    //     width: '10%',
+    //     title: '系统ID',
+    //     dataIndex: 'number',
+    //     width: '15%',
     //     editable: true,
     // },
+    {
+        title: '发货单号',
+        dataIndex: 'shippedNumber',
+        width: '20%',
+        editable: true,
+    },
     {
         title: '客户工厂',
         dataIndex: 'clientFactory',
-        width: '10%',
-        editable: true,
-    },
-    {
-        title: '状态',
-        dataIndex: 'status',
-        width: '10%',
-        editable: false,
-    },
-    // {
-    //     title: '物料',
-    //     dataIndex: 'material',
-    //     width: '10%',
-    //     editable: true,
-    // },
-    // {
-    //     title: '物料总数',
-    //     dataIndex: 'materialAmount',
-    //     width: '10%',
-    //     editable: true,
-    // },
-    {
-        title: '发货时间',
-        dataIndex: 'sentTime',
-        width: '25%',
-        editable: true,
-    },
-    {
-        title: '运输周期',
-        dataIndex: 'transportPeriod',
-        width: '10%',
-        editable: true,
-    }
-]
-
-// 信息管理-已冲销发货信息
-export const reversedTableColumns = [
-    {
-        title: '序号',
-        dataIndex: 'index',
-        width: '5%',
-        editable: true,
-    },
-    {
-        title: '号码',
-        dataIndex: 'number',
-        width: '10%',
-        editable: true,
-    },
-    {
-        title: '冲销号码',
-        dataIndex: 'reversedNumber',
-        width: '10%',
-        editable: true,
-    },
-    // {
-    //     title: '供应商',
-    //     dataIndex: 'vendorName',
-    //     width: '10%',
-    //     editable: true,
-    // },
-    {
-        title: '客户工厂',
-        dataIndex: 'clientFactory',
-        width: '10%',
+        width: '20%',
         editable: true,
     },
     {
@@ -263,6 +193,52 @@ export const reversedTableColumns = [
         dataIndex: 'sentTime',
         width: '15%',
         editable: true,
+    },
+    {
+        title: '预到日期',
+        dataIndex: 'expectReachDate',
+        width: '10%',
+        editable: true,
+    },
+    {
+        title: '操作人',
+        dataIndex: 'operator',
+        width: '10%',
+        editable: true,
+    }
+]
+
+// 信息管理-冲销管理
+export const reversedTableColumns = [
+    {
+        title: '序号',
+        dataIndex: 'index',
+        width: '5%',
+        editable: true,
+    },
+    // {
+    //     //     title: '系统ID',
+    //     //     dataIndex: 'number',
+    //     //     width: '15%',
+    //     //     editable: true,
+    //     // },
+    {
+        title: '冲销单号',
+        dataIndex: 'reversedNumber',
+        width: '20%',
+        editable: true,
+    },
+    {
+        title: '客户工厂',
+        dataIndex: 'clientFactory',
+        width: '20%',
+        editable: true,
+    },
+    {
+        title: '状态',
+        dataIndex: 'status',
+        width: '8%',
+        editable: false,
     },
     {
         title: '冲销时间',
@@ -271,14 +247,20 @@ export const reversedTableColumns = [
         editable: true,
     },
     {
-        title: '运输周期',
-        dataIndex: 'transportPeriod',
-        width: '8%',
+        title: '预到日期',
+        dataIndex: 'expectReachDate',
+        width: '10%',
+        editable: true,
+    },
+    {
+        title: '操作人',
+        dataIndex: 'operator',
+        width: '10%',
         editable: true,
     }
 ]
 
-// 信息管理-VMI收货信息
+// 报表管理-收货信息查询
 export const vmiReceivedTableColumns = [
     {
         title: '序号',
@@ -286,18 +268,24 @@ export const vmiReceivedTableColumns = [
         width: '5%',
         editable: true,
     },
-    {
-        title: '号码',
-        dataIndex: 'number',
-        width: '20%',
-        editable: true,
-    },
     // {
-    //     title: '供应商',
-    //     dataIndex: 'vendorName',
-    //     width: '15%',
+    //     title: '系统ID',
+    //     dataIndex: 'number',
+    //     width: '10%',
     //     editable: true,
     // },
+    {
+        title: '供应商名称',
+        dataIndex: 'vendorName',
+        width: '15%',
+        editable: true,
+    },
+    {
+        title: '收货单号',
+        dataIndex: 'receiveNumber',
+        width: '15%',
+        editable: true,
+    },
     {
         title: '客户工厂',
         dataIndex: 'clientFactory',
@@ -305,27 +293,27 @@ export const vmiReceivedTableColumns = [
         editable: true,
     },
     {
-        title: '状态',
-        dataIndex: 'status',
+        title: '发货时间',
+        dataIndex: 'sentTime',
+        width: '15%',
+        editable: true,
+    },
+    {
+        title: '发货人',
+        dataIndex: 'sender',
         width: '10%',
         editable: true,
     },
     {
-        title: '发货时间',
-        dataIndex: 'sentTime',
-        width: '20%',
-        editable: true,
-    },
-    {
-        title: '运输周期',
-        dataIndex: 'transportPeriod',
+        title: '预到日期',
+        dataIndex: 'expectReachDate',
         width: '10%',
         editable: true,
     },
     {
         title: '收货时间',
         dataIndex: 'receivedTime',
-        width: '20%',
+        width: '15%',
         editable: true,
     }
 ]
@@ -335,49 +323,75 @@ export const goodsTransferTableColumns = [
     {
         title: '序号',
         dataIndex: 'index',
-        width: '5%',
+        width: '3%',
         editable: true,
+        // fixed: 'left',
     },
     {
-        title: '物料',
+        title: '物料凭证',
+        dataIndex: 'number',
+        width: '8%',
+        editable: true,
+        //fixed: 'left',
+    },
+    {
+        title: '物料编码',
         dataIndex: 'material',
-        width: '10%',
+        width: '6%',
         editable: true,
     },
     {
         title: '物料描述',
         dataIndex: 'materialDescription',
-        width: '10%',
+        width: '9%',
+        editable: true,
+    },
+    {
+        title: '单位',
+        dataIndex: 'unit',
+        width: '4%',
         editable: true,
     },
     {
         title: '供应商名称',
         dataIndex: 'vendorName',
-        width: '10%',
+        width: '9%',
         editable: true,
     },
     {
         title: '合格品库存数量',
         dataIndex: 'qualifiedQuantity',
-        width: '12%',
+        width: '8%',
         editable: true,
     },
     {
         title: '不合格品库存数量',
         dataIndex: 'unqualifiedQuantity',
-        width: '12%',
+        width: '8%',
         editable: true,
     },
     {
-        title: '状态',
+        title: '移动类型',
         dataIndex: 'status',
-        width: '10%',
+        width: '8%',
+        editable: true,
+    },
+    {
+        title: '原因',
+        dataIndex: 'reason',
+        width: '8%',
+        editable: true,
+    },
+    {
+        title: '操作人',
+        dataIndex: 'operator',
+        width: '7%',
         editable: true,
     },
     {
         title: '创建时间',
         dataIndex: 'createdAt',
-        width: '20%',
+        width: '9%',
         editable: true,
     }
 ]
@@ -387,49 +401,61 @@ export const inventoryInfosTableColumns = [
     {
         title: '序号',
         dataIndex: 'index',
-        width: '5%',
+        width: '4%',
         editable: true,
     },
     {
-        title: '物料',
+        title: '物料编码',
         dataIndex: 'material',
-        width: '10%',
+        width: '8%',
         editable: true,
     },
     {
         title: '物料描述',
         dataIndex: 'materialDescription',
-        width: '10%',
+        width: '20%',
         editable: true,
     },
     {
-        title: '供应商名称',
-        dataIndex: 'vendorName',
-        width: '10%',
+        title: '单位',
+        dataIndex: 'unit',
+        width: '4%',
         editable: true,
     },
     {
         title: '合格品库存数量',
         dataIndex: 'qualifiedQuantity',
-        width: '15%',
+        width: '8%',
         editable: true,
     },
     {
         title: '不合格品库存数量',
         dataIndex: 'unqualifiedQuantity',
-        width: '15%',
+        width: '8%',
         editable: true,
     },
     {
         title: '在途数量',
         dataIndex: 'onTheWayQuantity',
-        width: '15%',
+        width: '8%',
         editable: true,
     },
     {
-        title: '日期',
+        title: '供应商编码',
+        dataIndex: 'vendorId',
+        width: '8%',
+        editable: true,
+    },
+    {
+        title: '供应商名称',
+        dataIndex: 'vendorName',
+        width: '16%',
+        editable: true,
+    },
+    {
+        title: '当前时间',
         dataIndex: 'createdAt',
-        width: '20%',
+        width: '16%',
         editable: true,
     }
 ]
@@ -443,131 +469,129 @@ export const reversedInfosTableColumns = [
         editable: true,
     },
     // {
-    //     title: '物料',
-    //     dataIndex: 'material',
-    //     width: '10%',
-    //     editable: true,
-    // },
-    // {
-    //     title: '物料描述',
-    //     dataIndex: 'materialDescription',
-    //     width: '10%',
-    //     editable: true,
-    // },
-    // {
-    //     title: '数量',
-    //     dataIndex: 'quantity',
-    //     width: '10%',
+    //     title: '系统ID',
+    //     dataIndex: 'number',
+    //     width: '13%',
     //     editable: true,
     // },
     {
         title: '供应商',
         dataIndex: 'vendorName',
-        width: '7%',
+        width: '10%',
         editable: true,
     },
     {
         title: '状态',
         dataIndex: 'status',
-        width: '8%',
+        width: '10%',
         editable: true,
     },
     {
         title: '生成号码',
         dataIndex: 'generatedNumber',
-        width: '20%',
+        width: '15%',
         editable: true,
     },
     {
         title: '生成日期',
         dataIndex: 'generatedDate',
-        width: '20%',
+        width: '15%',
         editable: true,
     },
     {
         title: '冲销号码',
         dataIndex: 'reversedNumber',
-        width: '20%',
+        width: '15%',
         editable: true,
     },
     {
         title: '冲销日期',
         dataIndex: 'reversedDate',
-        width: '20%',
+        width: '15%',
         editable: true,
-    }
+    },
+    {
+        title: '操作人',
+        dataIndex: 'operator',
+        width: '15%',
+        editable: true,
+    },
 ]
 
-// export const goodsStatusMap = [
-//     {
-//         key: 'sender_sent',
-//         value: '供应商发货',
-//         label: '供应商发货'
-//     },
-//     {
-//         key: 'to_be_sent',
-//         value: '待发货',
-//         label: '待发货'
-//     },
-//     {
-//         key: 'to_be_received',
-//         value: '待收货',
-//         label: '待收货'
-//     },
-//     {
-//         key: 'received',
-//         value: '已收货',
-//         label: '已收货'
-//     },
-//     {
-//         key: 'delivered',
-//         value: '已配送',
-//         label: '已配送'
-//     }
-// ]
+/**
+ * 订单状态
+ * @type {*[]}
+ * Todo:校验后端返回状态码是否正确
+ */
+export const goodsTransferStatusList = [
+    {
+        key: 'received',
+        value: 1,
+        label: '入库(101K)'
+    },
+    {
+        key: 'other_received',
+        value: 2,
+        label: '其他入库(Z01K)'
+    },
+    {
+        key: 'other_received_reversed',
+        value: 3,
+        label: '其他入库冲销(Z02K)'
+    },
+    {
+        key: 'deliver_dispatched',
+        value: 4,
+        label: '配送出库(261K)'
+    },
+    {
+        key: 'other_dispatched',
+        value: 5,
+        label: '其他出库(Z03K)'
+    },
+    {
+        key: 'other_dispatched_reversed',
+        value: 6,
+        label: '其他出库冲销(Z04K)'
+    },
+    {
+        key: 'transfer',
+        value: 7,
+        label: '移库(311K)'
+    },
+    {
+        key: 'transfer_reversed',
+        value: 8,
+        label: '移库冲销(312K)'
+    },
 
-export const materialTypeMap = [
-    {
-        key: 'materialType1',
-        value: '物料-1',
-        label: '物料-1'
-    },
-    {
-        key: 'materialType2',
-        value: '物料-2',
-        label: '物料-2'
-    },
-    {
-        key: 'materialType3',
-        value: '物料-3',
-        label: '物料-3'
-    },
-    {
-        key: 'materialType4',
-        value: '物料-4',
-        label: '物料-4'
-    }
 ]
 
-export const materialDescriptionMap = [
+/**
+ * 订单状态
+ * @type {*[]}
+ * Todo:校验后端返回状态码是否正确
+ */
+export const reversedInfoStatusList = [
     {
-        key: 'materialType1',
-        value: '物料描述-1',
-        label: '物料描述-1'
+        key: 'received_reversed',
+        value: 1,
+        label: '收货冲销'
     },
     {
-        key: 'materialType2',
-        value: '物料描述-2',
-        label: '物料描述-2'
+        key: 'other_received_reversed',
+        value: 2,
+        label: '其他入库冲销'
     },
     {
-        key: 'materialType3',
-        value: '物料描述-3',
-        label: '物料描述-3'
+        key: 'other_sent_reversed',
+        value: 3,
+        label: '其他出库冲销'
     },
     {
-        key: 'materialType4',
-        value: '物料描述-4',
-        label: '物料描述-4'
-    }
+        key: 'transfer_reversed',
+        value: 4,
+        label: '移库冲销'
+    },
+
 ]

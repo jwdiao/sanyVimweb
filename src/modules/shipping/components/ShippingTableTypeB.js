@@ -1,7 +1,7 @@
 /**
  * 发货相关的Table 类型B:
  * 此类Table不具备批量操作的功能，但可以编辑行
- * 如：[信息管理-工厂发货信息]页面的table
+ * 如：[信息管理-在途管理]页面的table
  */
 import React, {Component} from 'react';
 import {Form, Input, message, Popconfirm, Select, Table} from "antd";
@@ -10,16 +10,14 @@ import {
     materialTypeTableColumns, orderStatusList,
     reversedTableColumns,
     shippedTableColumns,
-    TABLE_OPERATION_DELETE,
-    TABLE_OPERATION_DUPLICATE,
-    TABLE_OPERATION_EDIT,
-    TABLE_OPERATION_REVERSE, TABLE_OPERATION_STATUS,
-    unitList,
     validStateList,
     http, ERROR_CODE_ADMIN_SANY_FACTORY_SUBMIT_FAIL, ERROR_CODE_ADMIN_SANY_FACTORY_OTHER_ERROR
 } from "../../../utils";
 import styled from "styled-components";
+import {TableButton} from "../../admin/components/TableButton";
+import moment from "moment";
 
+const _ = require('lodash')
 const FormItem = Form.Item;
 const EditableContext = React.createContext();
 
@@ -38,7 +36,7 @@ class EditableCell extends React.Component {
             let options = []
             switch (columnId) {
                 case 'unit':
-                    options = unitList
+                    options = []
                     break
                 case 'status':
                     options = validStateList
@@ -63,10 +61,10 @@ class EditableCell extends React.Component {
                                         ? validStateList.filter(state => state.value === option.value)[0].value
                                         : (
                                             columnId === 'vendorName'
-                                                ? vendorList.filter(role => role.value === option.value)[0].value
+                                                ? vendorList.filter(vendor => vendor.value === option.value)[0].value
                                                 : (
                                                     columnId === 'clientFactory'
-                                                        ? factoryList.filter(role => role.value === option.value)[0].value
+                                                        ? factoryList.filter(factory => factory.label === option.label)[0].label
                                                         : option.value
                                                 )
                                         )
@@ -164,9 +162,14 @@ class EditableCell extends React.Component {
                                 ) : (
                                     dataIndex === 'status' && (tableType === 'shipped_infos' || tableType === 'reversed_infos') && record[dataIndex] !== ''
                                         ? orderStatusList.filter(status => status.value === parseInt(record[dataIndex]))[0].label //避免使用字面量作为value: 如 value为1,2,3...，显示的是'待发货/待发货'
-                                        : (dataIndex === 'status' && tableType === 'vendor_material_type_management' && record[dataIndex] !== ''
+                                        : (
+                                            dataIndex === 'status' && tableType === 'vendor_material_type_management' && record[dataIndex] !== ''
                                             ? validStateList.filter(status => status.value === parseInt(record[dataIndex]))[0].label
-                                            : restProps.children
+                                            : (
+                                                dataIndex === 'expectReachDate' && record[dataIndex] !== ''
+                                                    ? moment(record[dataIndex]).format('YYYY-MM-DD')
+                                                    : restProps.children
+                                            )
                                         )
                                 )
                             }
@@ -182,7 +185,7 @@ class _ShippingTableTypeB extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            data: [],
+            data: null,
             columns: [],
             editingKey: '',
 
@@ -204,7 +207,7 @@ class _ShippingTableTypeB extends Component {
     }
 
     async componentDidMount() {
-        const result1 = await http.post('/supplier/supplierList',{})
+        const result1 = await http.post('/supplier/supplierList',{status:1})
         if (result1.ret === '200') {
             this.setState({
                 vendorList: result1.data.content.map(item => ({key: `vendor_${item.code}`, value: item.code, label: item.name}))
@@ -247,14 +250,14 @@ class _ShippingTableTypeB extends Component {
     constructTableFields = (tableType) => {
         let baseColumnsArray = []
         switch (tableType) {
-            case 'reversed_infos':
-                baseColumnsArray = reversedTableColumns
+            case 'vendor_material_type_management':
+                baseColumnsArray = materialTypeTableColumns
                 break
             case 'shipped_infos':
                 baseColumnsArray = shippedTableColumns
                 break
-            case 'vendor_material_type_management':
-                baseColumnsArray = materialTypeTableColumns
+            case 'reversed_infos':
+                baseColumnsArray = reversedTableColumns
                 break
             default:
                 break
@@ -280,60 +283,54 @@ class _ShippingTableTypeB extends Component {
                                         <OperationArea>
                                             <EditableContext.Consumer>
                                                 {form => (
-                                                    <a
-                                                        href="javascript:;"
+                                                    <TableButton
+                                                        type={'save'}
                                                         onClick={() => this.save(form, record)}
-                                                        style={{marginRight: 8}}
-                                                    >
-                                                        保存
-                                                    </a>
+                                                    />
                                                 )}
                                             </EditableContext.Consumer>
                                             <Popconfirm
                                                 title="确定取消吗?"
                                                 onConfirm={() => this.cancel(record.key)}
                                             >
-                                                <a>取消</a>
+                                                <TableButton
+                                                    type='cancel'
+                                                />
                                             </Popconfirm>
                                         </OperationArea>
                                     ) : (
                                         <OperationArea>
-                                            <EditableContext.Consumer>
-                                                {
-                                                    form => (
-                                                        <Popconfirm
-                                                            title={record.status === 1 ? "确定停用吗?" : "确定启用吗?"}
-                                                            onConfirm={() => this.changeStatus(form, record)}
-                                                        >
-                                                            <OperationButton
-                                                                disabled={editingKey !== ''}
-                                                                color={TABLE_OPERATION_STATUS}
-                                                            >
-                                                                {record.status === 1 ? "停用" : "启用"}
-                                                            </OperationButton>
-                                                        </Popconfirm>
-                                                    )
-                                                }
-                                            </EditableContext.Consumer>
+                                            {/*<EditableContext.Consumer>*/}
+                                            {/*    {*/}
+                                            {/*        form => (*/}
+                                            {/*            <Popconfirm*/}
+                                            {/*                title={record.status === 1 ? "确定停用吗?" : "确定启用吗?"}*/}
+                                            {/*                onConfirm={() => this.changeStatus(form, record)}*/}
+                                            {/*            >*/}
+                                            {/*                <TableButton*/}
+                                            {/*                    disabled={editingKey !== ''}*/}
+                                            {/*                    type='save'*/}
+                                            {/*                    customizedText={record.status === 1 ? "停用" : "启用"}*/}
+                                            {/*                />*/}
+                                            {/*            </Popconfirm>*/}
+                                            {/*        )*/}
+                                            {/*    }*/}
+                                            {/*</EditableContext.Consumer>*/}
 
-                                            <OperationButton
-                                                disabled={editingKey !== ''}
-                                                color={TABLE_OPERATION_EDIT}
-                                                onClick={() => this.edit(record.key)}
-                                            >
-                                                编辑
-                                            </OperationButton>
+                                            {/*<TableButton*/}
+                                            {/*    disabled={editingKey !== ''}*/}
+                                            {/*    type='edit'*/}
+                                            {/*    onClick={() => this.edit(record.key)}*/}
+                                            {/*/>*/}
 
                                             <Popconfirm
                                                 title="确定删除吗?"
                                                 onConfirm={() => this.delete(record.key)}
                                             >
-                                                <OperationButton
+                                                <TableButton
                                                     disabled={editingKey !== ''}
-                                                    color={TABLE_OPERATION_DELETE}
-                                                >
-                                                    删除
-                                                </OperationButton>
+                                                    type='delete'
+                                                />
                                             </Popconfirm>
 
                                         </OperationArea>
@@ -365,15 +362,13 @@ class _ShippingTableTypeB extends Component {
                                                 event.stopPropagation()
                                             }}
                                         >
-                                            <OperationButton
+                                            <TableButton
                                                 disabled={editingKey !== ''}
-                                                color={TABLE_OPERATION_REVERSE}
+                                                type='reverse'
                                                 onClick={event => {
                                                     event.stopPropagation()
                                                 }}
-                                            >
-                                                冲销
-                                            </OperationButton>
+                                            />
                                         </Popconfirm>
                                     </OperationArea>
                                 </div>
@@ -393,16 +388,14 @@ class _ShippingTableTypeB extends Component {
                             return (
                                 <div>
                                     <OperationArea>
-                                        <OperationButton
+                                        <TableButton
                                             disabled={editingKey !== ''}
-                                            color={TABLE_OPERATION_DUPLICATE}
+                                            type='duplicate'
                                             onClick={(event) => {
                                                 this.duplicate(record.key)
                                                 event.stopPropagation()
                                             }}
-                                        >
-                                            复制
-                                        </OperationButton>
+                                        />
                                     </OperationArea>
                                 </div>
                             );
@@ -426,25 +419,17 @@ class _ShippingTableTypeB extends Component {
 
     // 复制
     duplicate = async (key) => {
-        console.log('duplicate button called!', key)
-        // const {tableType, onTableItemDuplicatedListener} = this.props
-        // // Todo: 调用后台接口，复制数据至待发货
-        // if (onTableItemDuplicatedListener) {
-        //     let newData = [...this.state.data];
-        //     const index = newData.findIndex(item => key === item.key);
-        //     const item = newData[index];
-        //     onTableItemDuplicatedListener(tableType, item)
-        // }
+        const { userInfo } = this.props
         let newData = [...this.state.data];
         const index = newData.findIndex(item => key === item.key);
         if (index > -1) {
             const result = await this.callNetworkRequest({
-                requestUrl:`/order/copy/${newData[index].id}`,
-                params:{},
-                requestMethod:'GET'
+                requestUrl:'/order/copy',
+                params:{ id:newData[index].id, operatorName: userInfo.userName },
+                requestMethod:'POST'
             })
 
-            if (result) {
+            if (result && result.ret === '200') {
                 message.success('发货单复制成功！')
             } else {
                 message.error(`数据提交失败！请稍候重试。(${ERROR_CODE_ADMIN_SANY_FACTORY_SUBMIT_FAIL})`)
@@ -455,14 +440,12 @@ class _ShippingTableTypeB extends Component {
         }
     }
 
-    // (Deprecated)冲销（使用删除接口）
-    reverseRecord = (key) => {
-        console.log('reverseRecord button called!', key)
-    }
-
     // 保存
     save = (form, record) => {
-        const {tableType, onTableItemEditedListener} = this.props
+        const {tableType, userInfo, onTableItemEditedListener} = this.props
+        const {factoryList} = this.state
+        console.log('===factoryList===',factoryList)
+        const userSpecifiedVendor = _.get(userInfo, 'vendor')
         form.validateFields(async (error, row) => {
             if (error) {
                 return;
@@ -484,8 +467,9 @@ class _ShippingTableTypeB extends Component {
                         requestUrl = '/factorySupplierMaterial/save'
                         params = Object.assign({}, params, {
                             // materialCode:row.material, //暂时禁用修改物料的功能
-                            supplierCode: row.vendorName,
-                            factoryCode: row.clientFactory
+                            supplierCode: userSpecifiedVendor.value || '',
+                            factoryCode: factoryList.filter(factory=> factory.label === row.clientFactory)[0].value,
+                            materialCode:item.material,
                         })
                         break
                     default:
@@ -498,7 +482,7 @@ class _ShippingTableTypeB extends Component {
                 })
 
                 // console.log('result =' ,result)
-                if (result) {
+                if (result && result.ret === '200') {
                     newData.splice(index, 1, {
                         ...item,
                         ...row,
@@ -511,6 +495,7 @@ class _ShippingTableTypeB extends Component {
                     if (onTableItemEditedListener) {
                         onTableItemEditedListener(tableType, newData)
                     }
+                    message.success('操作成功！')
                 } else {
                     message.error(`数据提交失败！请稍候重试。(${ERROR_CODE_ADMIN_SANY_FACTORY_SUBMIT_FAIL})`)
                 }
@@ -557,7 +542,7 @@ class _ShippingTableTypeB extends Component {
                     requestMethod
                 })
 
-                if (result) {
+                if (result && result.ret === '200') {
                     item.status = newStatus
                     newData.splice(index, 1, {
                         ...item,
@@ -571,10 +556,10 @@ class _ShippingTableTypeB extends Component {
                     if (onTableItemStateChangedListener) {
                         onTableItemStateChangedListener(tableType, newData)
                     }
+                    message.success('操作成功！')
                 } else {
                     message.error(`数据提交失败！请稍候重试。(${ERROR_CODE_ADMIN_SANY_FACTORY_SUBMIT_FAIL})`)
                 }
-
             } else {
                 message.error(`数据提交失败！请稍候重试。(${ERROR_CODE_ADMIN_SANY_FACTORY_OTHER_ERROR})`)
                 newData.push(row);
@@ -590,7 +575,7 @@ class _ShippingTableTypeB extends Component {
 
     // 删除
     delete = async (key) => {
-        const { tableType, onTableItemDeletedListener } = this.props
+        const { tableType, onTableItemDeletedListener, userInfo } = this.props
         let newData = [...this.state.data];
         const index = newData.findIndex(item => key === item.key);
         if (index > -1) {
@@ -607,8 +592,9 @@ class _ShippingTableTypeB extends Component {
 
                 // 冲销操作，实际上与删除操作是一样的
                 case 'shipped_infos':
-                    requestUrl = `/order/update/offset/${newData[index].id}`
-                    requestMethod = 'GET'
+                    requestUrl = '/order/update/offset'
+                    params = Object.assign({}, params, {operatorName: userInfo.userName})
+                    requestMethod = 'POST'
                     break
                 default:
                     break
@@ -621,19 +607,24 @@ class _ShippingTableTypeB extends Component {
 
             // console.log('result =' ,result)
             if (result) {
-                const item = newData[index];
-                newData.splice(index, 1);
-                newData = newData.map((data,index)=>({...data, index:index+1}))// 删除（或冲销）后，注意修改序号
-                this.setState({
-                    data: newData,
-                    editingKey: ''
-                }, () => {
-                    if (onTableItemDeletedListener) {
-                        onTableItemDeletedListener(tableType, item)
-                    }
-                });
+                if (result.ret === '200') {
+                    const item = newData[index];
+                    newData.splice(index, 1);
+                    newData = newData.map((data,index)=>({...data, index:index+1}))// 删除（或冲销）后，注意修改序号
+                    this.setState({
+                        data: newData,
+                        editingKey: ''
+                    }, () => {
+                        if (onTableItemDeletedListener) {
+                            onTableItemDeletedListener(tableType, item)
+                        }
+                    });
+                    message.success('操作成功！')
+                } else  {
+                    message.error(`删除失败！${result.msg}`)
+                }
             } else {
-                message.error(`数据提交失败！请稍候重试。(${ERROR_CODE_ADMIN_SANY_FACTORY_SUBMIT_FAIL})`)
+                message.error(`数据提交失败！请稍候重试。(${ERROR_CODE_ADMIN_SANY_FACTORY_OTHER_ERROR})`)
             }
         } else {
             console.log('delete button clicked! error!', key)
@@ -659,12 +650,12 @@ class _ShippingTableTypeB extends Component {
             result = await http.get(requestUrl)
         }
         console.log(`request: ${requestUrl}`, 'params:', params, 'result:', result)
-        return result && result.ret === '200'
+        return result
     }
 
     render() {
         const {tableType} = this.props
-        const {vendorList, factoryList } = this.state
+        const {data, vendorList, factoryList} = this.state
         const components = {
             body: {
                 cell: EditableCell,
@@ -680,7 +671,12 @@ class _ShippingTableTypeB extends Component {
                 onCell: record => ({
                     tableType,
                     record,
-                    inputType: (col.dataIndex === 'unit' || col.dataIndex === 'status' || col.dataIndex === 'vendorName' || col.dataIndex === 'clientFactory') ? 'selector' : 'text',
+                    inputType: (
+                        col.dataIndex === 'unit'
+                        || col.dataIndex === 'status'
+                        || col.dataIndex === 'vendorName'
+                        || col.dataIndex === 'clientFactory'
+                    ) ? 'selector' : 'text',
                     dataIndex: col.dataIndex,
                     title: col.title,
                     editing: this.isEditing(record),
@@ -696,17 +692,19 @@ class _ShippingTableTypeB extends Component {
                     className="data-board-table"
                     // bodyStyle={{minHeight: 'calc(100vh - 280px)', maxHeight: 'calc(100vh - 280px)'}}
                     components={components}
-                    bordered
-                    dataSource={this.state.data}
+                    bordered={false}
+                    dataSource={data}
                     columns={columns}
                     rowClassName="editable-row"
                     pagination={{
+                        showQuickJumper: true,
                         onChange: this.cancel,
                     }}
+                    loading={data===null}
                     onRow={(record) => {
                         return {
                             onClick: (event) => {
-                                // 点击行: 只有在非编辑状态冰球没有点击编辑按钮，才可以响应行点击事件
+                                // 点击行: 只有在非编辑状态并且没有点击编辑按钮，才可以响应行点击事件
                                 if (!this.isEditing(record)) {
                                     this.onRowClicked(record)
                                 }
@@ -732,10 +730,4 @@ const OperationArea = styled.div`
   flex-direction: row;
   justify-content: center;
   align-items: center;
-`
-
-const OperationButton = styled.a`
-  margin-left:4%; 
-  margin-right:4%; 
-  color:${p => (p.disabled ? 'gray' : p.color)};
 `

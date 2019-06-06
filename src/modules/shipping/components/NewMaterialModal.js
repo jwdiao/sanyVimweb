@@ -7,9 +7,12 @@ import {
     Modal,
     Input,
     Form,
-    Select
+    Select,
+    AutoComplete
 } from 'antd';
-import {http} from "../../../utils";
+import {http, isEmpty} from "../../../utils";
+
+const _ = require('lodash')
 
 const {Option} = Select;
 
@@ -24,9 +27,9 @@ const formItemLayout = {
     },
 };
 
-function hasErrors(fieldsError) {
-    return Object.keys(fieldsError).some(field => fieldsError[field]);
-}
+// function hasErrors(fieldsError) {
+//     return Object.keys(fieldsError).some(field => fieldsError[field]);
+// }
 
 class _NewMaterialModal extends Component {
     constructor(props) {
@@ -39,6 +42,9 @@ class _NewMaterialModal extends Component {
             _unitList: [],
             _vendorList: [],
             _factoryList: [],
+
+            // AutoComplete 组件所需数据源
+            dataSource:[],
         }
     }
 
@@ -60,7 +66,7 @@ class _NewMaterialModal extends Component {
             message.error('获取物料单位失败！请稍候重试。')
         }
 
-        const result2 = await http.post('/supplier/supplierList',{})
+        const result2 = await http.post('/supplier/supplierList',{status:1})
         if (result2.ret === '200') {
             this.setState({
                 _vendorList: result2.data.content.map(item => ({key: `vendor_${item.code}`, value: item.code, label: item.name}))
@@ -83,6 +89,8 @@ class _NewMaterialModal extends Component {
         console.log('Clicked cancel button');
         this.setState({
             visible: false,
+            // 重置状态
+            materialDescriptionText: '未找到该编号对应的物料！',
         });
         if (this.props.onCancelClickedListener) {
             this.props.onCancelClickedListener()
@@ -108,17 +116,17 @@ class _NewMaterialModal extends Component {
                 if (modalType === 'basic_material_type_management') {
                     requestUrl = '/material/save '
                     params = Object.assign({}, params, {
-                        code: values.material,
-                        name: values.materialDescription,
+                        code: values.material.trim(),
+                        name: values.materialDescription.trim(),
                         units: _unitList.filter(unit => unit.value === values.unit)[0].label,
                     })
                 } else {
                     console.log('values', values)
                     requestUrl = '/factorySupplierMaterial/save'
                     params = Object.assign({}, params, {
-                        materialCode: values.material, // 传参时只传递物料号，物料名称等其他参数只做界面展示之用，不传递
-                        supplierCode: values.vendor,
-                        factoryCode: values.factory,
+                        materialCode: values.material.trim(), // 传参时只传递物料号，物料名称等其他参数只做界面展示之用，不传递
+                        supplierCode: values.vendor.trim(),
+                        factoryCode: values.factory.trim(),
                     })
                 }
                 const result = await this.callNetworkRequest({
@@ -127,7 +135,8 @@ class _NewMaterialModal extends Component {
                     requestMethod: 'POST'
                 })
 
-                if (!result && result.ret === '200') {
+                console.log('handleSubmit result',result)
+                if (result && result.ret === '200') {
                     const addedData = {
                         // key: freshId(),
                         // // id: content.id,
@@ -139,6 +148,7 @@ class _NewMaterialModal extends Component {
                     if (this.props.onOkClickedListener) {
                         this.props.onOkClickedListener(this.props.modalType, addedData)
                     }
+                    message.success('操作成功！')
                 } else {
                     message.error(`数据提交失败！${result.msg}[${result.ret}]`)
                 }
@@ -152,23 +162,49 @@ class _NewMaterialModal extends Component {
         });
     }
 
+    // 供应商物料添加时的校验器，校验物料是否存在
     getMaterialNameValidator = async (rule, value, callback, source, options) => {
-        let errors = [];
         const result = await http.post('/material/find/all',{
             code: value,
         })
-        // console.log('getMaterialNameValidator', result)
+        console.log('getMaterialNameValidator', result)
         if (!isEmpty(value)) {
             if (result.ret === '200' && result.data.content.length>0) {
-                this.setState({
-                    materialDescriptionText:result.data.content[0].name
-                })
-                callback()
+                const valueIndex = result.data.content.findIndex(content=>content.code === value)
+                if (valueIndex > -1) {
+                    this.setState({
+                        materialDescriptionText:result.data.content[valueIndex].name
+                    })
+                    callback()
+                } else {
+                    callback('未找到该编号对应的物料！')
+                }
             } else {
                 this.setState({
                     materialDescriptionText:'未找到该编号对应的物料！'
                 })
                 callback('未找到该编号对应的物料！')
+            }
+        }
+        callback()
+    }
+
+    // 基础物料添加时的校验器，校验物料编号唯一
+    getMaterialNameUniqueValidator = async (rule, value, callback, source, options) => {
+        const result = await http.post('/material/find/all',{
+            code: value,
+        })
+        console.log('getMaterialNameUniqueValidator', result)
+        if (!isEmpty(value)) {
+            if (result.ret === '200' && result.data.content.length>0) {
+                const valueIndex = result.data.content.findIndex(content=>content.code === value)
+                if (valueIndex > -1) {
+                    callback('该编号对应的物料已存在！')
+                } else {
+                    callback()
+                }
+            } else {
+                callback()
             }
         }
         callback()
@@ -186,13 +222,39 @@ class _NewMaterialModal extends Component {
         return result
     }
 
+    // AutoComplete组件监听
+    handleSearch = async value => {
+        if (value.length < 5) {
+            this.setState({
+                dataSource: []
+            })
+            return
+        }
+        const result = await http.post('/material/find/all',{
+            code: value,
+        })
+        if (!isEmpty(value)) {
+            if (result.ret === '200' && result.data.content.length>0) {
+                this.setState({
+                    dataSource: !value ? [] : _.uniq(result.data.content.map(content=>content.code).filter(content=>content.indexOf(value) > -1)),
+                })
+            } else {
+                this.setState({
+                    dataSource: []
+                })
+            }
+        }
+    };
+
     render() {
         const {visible, confirmLoading, _vendorList, _factoryList, _unitList, materialDescriptionText} = this.state;
-        const {modalType, form} = this.props
+        const {modalType, form, userInfo} = this.props
 
         const {
             getFieldDecorator, getFieldError, isFieldTouched,
         } = form;
+
+        const userSpecifiedVendor = _.get(userInfo, 'vendor')
 
         // Only show error after a field is touched.
         const materialIdError = isFieldTouched('material') && getFieldError('material');
@@ -200,6 +262,8 @@ class _NewMaterialModal extends Component {
         const unitError = isFieldTouched('unit') && getFieldError('unit');
         const vendorError = isFieldTouched('vendor') && getFieldError('vendor');
         const factoryError = isFieldTouched('factory') && getFieldError('factory');
+
+        const { dataSource } = this.state;
 
         return (
             <div>
@@ -220,27 +284,40 @@ class _NewMaterialModal extends Component {
                             {getFieldDecorator('material', {
                                 rules: [
                                     {required: true, message: '请输入物料编号!'},
-                                    modalType === 'vendor_material_type_management'? {validator: this.getMaterialNameValidator} : {}
+                                    modalType === 'vendor_material_type_management'? {validator: this.getMaterialNameValidator} : {validator: this.getMaterialNameUniqueValidator}
                                 ],
                             })(
-                                <Input
-                                    placeholder="请输入物料编号"
-                                />
+                                modalType === 'vendor_material_type_management'? (
+                                    <AutoComplete
+                                        dataSource={dataSource}
+                                        style={{ width: '100%' }}
+                                        // onSelect={this.onSelect}
+                                        onSearch={this.handleSearch}
+                                        placeholder="请输入物料编号"
+                                        // filterOption={(inputValue, option) =>
+                                        //     option.props.children.indexOf(inputValue) !== -1
+                                        // }
+                                    />
+                                    ) : (
+                                        <Input
+                                            placeholder="请输入物料编号"
+                                        />
+                                )
                             )}
                         </Form.Item>
 
                         {
                             modalType === 'basic_material_type_management' && (
                                 <Form.Item
-                                    label="物料:"
+                                    label="物料编码:"
                                     validateStatus={materialNameError ? 'error' : ''}
                                     help={materialNameError || ''}
                                 >
                                     {getFieldDecorator('materialDescription', {
-                                        rules: [{required: true, message: '请输入物料名称!'}],
+                                        rules: [{required: true, message: '请输入物料描述!'}],
                                     })(
                                         <Input
-                                            placeholder="请输入物料名称"/>
+                                            placeholder="请输入物料描述"/>
                                     )}
                                 </Form.Item>
                             )
@@ -249,7 +326,7 @@ class _NewMaterialModal extends Component {
                         {
                             modalType === 'vendor_material_type_management' && (
                                 <Form.Item
-                                    label="物料:"
+                                    label="物料编码:"
                                     validateStatus={materialNameError ? 'error' : ''}
                                     help={materialNameError || ''}
                                 >
@@ -303,13 +380,14 @@ class _NewMaterialModal extends Component {
                                 >
                                     {getFieldDecorator('vendor', {
                                         rules: [{required: true, message: '请选择供应商!'}],
+                                        // initialValue: _vendorList.length > 0 ? _vendorList[0].value : null
                                     })(
                                         <Select
                                             // mode="multiple"
-                                            placeholder="请选择"
+                                            placeholder="请选择供应商"
                                         >
                                             {
-                                                _vendorList.map(vendor => {
+                                                userSpecifiedVendor && _vendorList.filter(vendor=>vendor.value === userSpecifiedVendor.value).map(vendor => {
                                                     return (
                                                         <Option
                                                             key={vendor.key}
@@ -334,11 +412,12 @@ class _NewMaterialModal extends Component {
                                     help={factoryError || ''}
                                 >
                                     {getFieldDecorator('factory', {
-                                        rules: [{required: true, message: '请选择客户工厂!'}]
+                                        rules: [{required: true, message: '请选择客户工厂!'}],
+                                        // initialValue: _factoryList.length > 0 ? _factoryList[0].value : null
                                     })(
                                         <Select
                                             // mode="multiple"
-                                            placeholder="请选择"
+                                            placeholder="请选择客户工厂"
                                         >
                                             {
                                                 _factoryList.map(factory => {
@@ -362,10 +441,6 @@ class _NewMaterialModal extends Component {
             </div>
         );
     }
-}
-
-function isEmpty(testString) {
-    return !testString || testString.length === 0 || testString === ''
 }
 
 export const NewMaterialModal = Form.create()(_NewMaterialModal);

@@ -8,7 +8,7 @@ import {
     message, Tooltip, Icon
 } from 'antd';
 import styled from "styled-components";
-import {formatDate, http, validStateList} from "../../../utils";
+import {http, isEmpty} from "../../../utils";
 import freshId from "fresh-id";
 
 const modalTitleMap = {
@@ -154,8 +154,8 @@ class _InputModal extends Component {
             const result = await this.callNetworkRequest({
                 requestUrl: '/factory/addOrUpdateFactory',
                 params: Object.assign({}, params, {
-                    code:factoryCode,
-                    name:factoryName,
+                    code:factoryCode.trim(),
+                    name:factoryName.trim(),
                 }),
                 requestMethod:'POST'
             })
@@ -164,14 +164,15 @@ class _InputModal extends Component {
                 const addedData = {
                     key: freshId(),
                     // id: content.id,
-                    sanyId: factoryCode,
-                    sanyName: factoryName,
+                    sanyId: factoryCode.trim(),
+                    sanyName: factoryName.trim(),
                     status: 1,
                     // createdAt: formatDate(content.createTime),
                 }
                 if (this.props.onOkClickedListener) {
                     this.props.onOkClickedListener(this.props.modalType, addedData)
                 }
+                message.success('操作成功！')
             } else {
                 message.error('数据提交失败！请稍候重试。')
             }
@@ -201,6 +202,7 @@ class _InputModal extends Component {
                 if (this.props.onOkClickedListener) {
                     this.props.onOkClickedListener(this.props.modalType, addedData)
                 }
+                message.success('操作成功！')
             } else {
                 message.error('数据提交失败！请稍候重试。')
             }
@@ -335,10 +337,6 @@ class _InputModal extends Component {
             </div>
         );
     }
-}
-
-function isEmpty(testString) {
-    return !testString || testString.length === 0 || testString === ''
 }
 
 export const InputModal = _InputModal;

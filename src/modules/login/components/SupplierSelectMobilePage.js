@@ -62,19 +62,16 @@ class _SupplierSelectPage extends Component {
 
   onVendorSubmit = () => {
     let vendorCode = this.state.pickerValue;
-    //submit vendor value
     console.log(`selected vendor is '${vendorCode}'`);
     if (vendorCode.length === 0) {
       Toast.fail('请选择供应商', 1);
       return false;
     }
-    // set vendor to user
     let vendor = _find(this.state.vendors, i => i.value === vendorCode[0]);
     const user = Durian.get('user');
     user.vendor = vendor;
     Durian.set('user', user);
     console.log(user);
-    //route to main page
     this.props.history.push('/main');
 
   }

@@ -2,7 +2,7 @@
 @secondaryColor: #4294E6;
 :global {
   .ant-modal-header {
-    background-color: #5a8cff;
+    background-color: #48b2f7;
   }
 }
 
@@ -11,6 +11,19 @@
     .ant-select-selection {
       overflow: hidden;
     }
+  }
+}
+
+.table-button-style {
+  &.ant-btn-primary {
+    text-shadow: 0 0 0 transparent;
+    box-shadow: 0 0 0 transparent;
+  }
+}
+
+.refresh-list-view-style {
+  .am-pull-to-refresh-content {
+    min-height: calc(100vh - 126px);
   }
 }
 
@@ -35,6 +48,9 @@ div.am-list-body::after{
   .am-navbar-left{
     padding-left:0;
   }
+  .am-navbar-right{
+    margin-right: 0;
+  }
 }
 .collapse-common-class.ant-collapse > .ant-collapse-item > .ant-collapse-header .ant-collapse-arrow{
   top:90%;
@@ -45,6 +61,7 @@ div.am-list-body::after{
 }
 .collapse-common-class.ant-collapse > .ant-collapse-item > .ant-collapse-header {
   box-shadow: inset 0 -15px 24px -15px #d4ddf5;
+  padding:5px 10px;
 }
 .collapse-common-class.ant-collapse .ant-collapse-content > .ant-collapse-content-box {
   padding:0;
@@ -79,7 +96,7 @@ div.am-list-body::after{
   padding: 0 24px;
   cursor: pointer;
   transition: color .3s;
-  color: PRIMARY_COLOR;
+  color: @primaryColor;
 }
 
 .editable-row .ant-form-explain {
@@ -114,9 +131,9 @@ div.am-list-body::after{
   .ant-table-thead > tr > th {
     height: 40px;
     padding: 0 8px;
-    background-color: rgb(226,238,246);
-    color: #000;
-    // border-bottom: 0 transparent solid;
+    // background-color: rgb(226,238,246);
+    color: #555;
+    border-top: 1px #e5e5e5 solid;
     text-align: center;
     // border: 10px black solid;
   }
@@ -124,6 +141,7 @@ div.am-list-body::after{
     padding: 0 8px;
     height: calc((100vh - 300px)/10);
     text-align: center;
+    color: #555;
     //background: transparent;
     //color: rgba(2, 201, 252, 1);
     // border-bottom: 0 transparent solid;
@@ -162,8 +180,9 @@ div.am-list-body::after{
   .ant-table-thead > tr > th {
     height: 40px;
     padding: 0 8px;
-    background-color: rgb(226,238,246);
-    color: #000;
+    // background-color: rgb(226,238,246);
+    color: #555;
+    border-top: 1px #e5e5e5 solid;
     // border-bottom: 0 transparent solid;
     text-align: center;
     // border: 10px black solid;
@@ -172,6 +191,7 @@ div.am-list-body::after{
     padding: 0 8px;
     height: 40px;
     text-align: center;
+    color: #555;
     //background: transparent;
     //color: rgba(2, 201, 252, 1);
     // border-bottom: 0 transparent solid;
@@ -220,10 +240,10 @@ div.am-list-body::after{
     .am-list-line::after{
       background-color: #fff !important;
     }
-  }
-
-  &.am-list-item &.am-input-control input {
-    font-size: 14px;
+    .am-input-control .fake-input-container .fake-input-placeholder{
+      color: #5a8cff;
+      font-weight: bold;
+    }
   }
 }
 
@@ -239,7 +259,7 @@ div.am-list-body::after{
 
 .searchbar-input.am-list-item.am-list-item-middle{
   border: none;
-  height: 30px;
+  height: 36px;
   background-color: #E0DFDF;
   // padding-left:10px;
   border-radius: 18px;
@@ -287,10 +307,57 @@ div.am-list-body::after{
 .gt-picker-item {
   &.am-list-item .am-list-line .am-list-extra{
     flex-basis: 100%;
+    padding:6px 0;
   }
 }
 
 input:-webkit-autofill {
+//
 -webkit-box-shadow: 0 0 0px 1000px white inset
 }
 
+.common-auto-complete.ant-select-auto-complete{
+  .ant-input{
+    border:none;
+    text-align: right;
+    padding-right: 32px;
+  }
+  .ant-select-selection__placeholder{
+    color: #5a8cff;
+    font-weight: bold;
+    font-size: 16px;
+    text-align: right;
+    margin-right:6px !important;
+  }
+}
+
+.common-auto-complete{
+  &.ant-select-auto-complete{
+    &.ant-select{
+      .ant-input:focus, .ant-input:hover{
+        border:none;
+        box-shadow: none;
+      }
+    }
+    &.ant-select-open{
+      .ant-select-selection{
+        border:none;
+        box-shadow: none;
+      }
+    }
+    &.ant-select-focused{
+      .ant-select-selection{
+        border:none;
+        box-shadow: none;
+      }
+    }
+    &.ant-select-focused:focus{
+      border:none;
+      box-shadow: none;
+    }
+    &.ant-select-selection:active{
+      border:none;
+      box-shadow: none;
+    }
+  }
+}

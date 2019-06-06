@@ -4,73 +4,62 @@
  */
 import React, {Component} from "react";
 import {message} from "antd";
-import moment from 'moment'
 import freshId from 'fresh-id'
-import * as XLSX from 'xlsx';
 import {AdminTable} from "./AdminTable";
 import {InputModal} from "./InputModal";
 import {AdminHeader} from "./AdminHeader";
 import {NewUserModal} from "./NewUserModal";
-import {formatDate, http, validStateList} from "../../../utils";
+import {Durian, Encrypt, formatDate, http} from "../../../utils";
 import {NewMaterialModal} from "../../shipping/components/NewMaterialModal";
+import {EventEmitter} from "events";
 
 const _ = require('lodash')
+const eventEmitter = new EventEmitter()
 
-/* generate an array of column objects */
-const make_cols = refstr => {
-    let o = [], C = XLSX.utils.decode_range(refstr).e.c + 1;
-    for (var i = 0; i < C; ++i) o[i] = {name: XLSX.utils.encode_col(i), key: i}
-    return o;
-};
 const uploadProps = {
     accept: '.xls,.xlsx',
     name: 'file',//upload file name
-    //data:{'prop1': 1, prop2:'string'},//other fields
     showUploadList: false,
-    // action: 'http://localhost:8080/shipping/upload/batch/',
-    action: 'http://10.19.8.21:9999/material/upload',
-    // headers: {
-    //     authorization: 'authorization-text', //auth header to be set
-    // },
-    onChange(info) {
-        if (info.file.status !== 'uploading') {
-            console.log(info.file, info.fileList);
-            message.success(`${info.file.name} 文件上传中...`);
-        }
-        if (info.file.status === 'done') {
-            console.log(info.file, info.fileList);
-            message.success(`${info.file.name} 文件上传成功！`);
-
-        } else if (info.file.status === 'error') {
-            console.log(info.file, info.fileList);
-            message.error(`${info.file.name} 文件上传失败！`);
+    action: `${http.baseUploadUrl}/material/upload`,
+    multiple:false,
+    onStart(file){
+        console.log('onStart', file, file.name);
+    },
+    onSuccess(ret, file) {
+        console.log('onSuccess', ret, file.name);
+        if (ret.ret === '500') {
+            message.error(ret.msg)
+        } else if (ret.ret === '200') {
+            message.success('数据导入成功！')
+            eventEmitter.emit('refresh_data')
         }
     },
-    // 把excel的处理放在beforeUpload事件，否则要把文件上传到通过action指定的地址去后台处理
-    // 这里我们没有指定action地址，因为没有传到后台
-    // beforeUpload: (file, fileList) => {
-    //     const reader = new FileReader();
-    //     const rABS = !!reader.readAsBinaryString;
-    //     reader.onload = (e) => {
-    //         /* Parse data */
-    //         const bstr = e.target.result;
-    //         const wb = XLSX.read(bstr, {type: rABS ? 'binary' : 'array'});
-    //         /* Get first worksheet */
-    //         const wsname = wb.SheetNames[0];
-    //         const ws = wb.Sheets[wsname];
-    //         /* Convert array of arrays */
-    //         const xlsxJson = XLSX.utils.sheet_to_json(ws, {header: 1});
-    //         console.log(xlsxJson);
-    //         console.log(make_cols(ws['!ref']));
-    //     };
-    //     if (rABS) reader.readAsBinaryString(file); else reader.readAsArrayBuffer(file);
-    //     return true;
-    // }
-    // beforeUpload: (file, fileList) => {
-    //     const fileName = file.val()
-    //     const suffix = fileName.substring(fileName.lastIndexOf('.')+1, fileName.length)
-    //     console.log('suffix', suffix)
-    // }
+    onError(err) {
+        console.log('onError', err);
+    },
+    onProgress({ percent }, file) {
+        console.log('onProgress', `${percent}%`, file.name);
+    },
+    customRequest({
+                      action,
+                      data,
+                      file,
+                      filename,
+                      headers,
+                      onError,
+                      onProgress,
+                      onSuccess,
+                      withCredentials,
+                  }) {
+
+        const formData = new FormData();
+        formData.append('uploadFile', file) // 把需要传递的参数append到formData中
+        http.uploadFile(action, formData, onProgress)
+            .then(({ data: response }) => {
+                onSuccess(response, file);
+            })
+            .catch(onError);
+    }
 };
 
 class _TableController extends Component {
@@ -79,29 +68,29 @@ class _TableController extends Component {
         this.state = {
             showModal: false,
             editState: false,
-            dataSet: [],
+            dataSet: null,
+            immutableDataSet: [],//用来备份数据集，防止修改筛选条件后，源数据改变
         }
     }
 
-    componentWillMount() {
-        // console.log('componentWillMount called', this.props)
-        //Todo:For test only
-        // const {selectedTabKey} = this.props
-        // let dataSet = this.constructData(selectedTabKey)
-        // this.setState({
-        //     dataSet,
-        //     immutableDataSet: dataSet,
-        // })
-    }
-
-    async componentDidMount() {
+    async componentWillMount() {
+        // 构建数据
         const {selectedTabKey} = this.props
-        const content = await this.constructData(selectedTabKey)
+        let dataSet = await this.constructData(selectedTabKey)
         this.setState({
-            dataSet: content,
-            immutableDataSet: content,
+            dataSet,
+            immutableDataSet: dataSet,
         })
     }
+
+    // async componentDidMount() {
+    //     const {selectedTabKey} = this.props
+    //     const content = await this.constructData(selectedTabKey)
+    //     this.setState({
+    //         dataSet: content,
+    //         immutableDataSet: content,
+    //     })
+    // }
 
     async componentWillReceiveProps(nextProps, nextState) {
         // console.log('componentWillReceiveProps called', nextProps)
@@ -110,7 +99,7 @@ class _TableController extends Component {
         if (selectedTabKeyThis !== selectedTabKeyNext) {
             // 清除数据集，防止不同页面数据错乱
             this.setState({
-                dataSet:[],
+                dataSet:null,
                 showModal: false,
                 editState: false,
                 selectedRowKeys:[],//切换了Tab后，清空选中的数据Key数组
@@ -127,6 +116,21 @@ class _TableController extends Component {
     shouldComponentUpdate(nextProps, nextState) {
         // console.log('shouldComponentUpdate called', nextProps, nextState)
         return nextState !== this.state || nextProps !== this.props;
+    }
+
+    componentDidMount() {
+        this.eventE1 = eventEmitter.addListener('refresh_data', async ()=>{
+            const {selectedTabKey} = this.props
+            let dataSet = await this.constructData(selectedTabKey)
+            this.setState({
+                dataSet,
+                immutableDataSet: dataSet,
+            })
+        })
+    }
+
+    componentWillUnmount() {
+        eventEmitter.removeAllListeners()
     }
 
     // 构建数据
@@ -183,7 +187,11 @@ class _TableController extends Component {
                     requestUrl: '/user/userList',
                     params,
                     requestMethod: 'POST'})
-                return originalContent.map((content, index)=>{
+                const user = Durian.get('user')
+                // console.log('TableController get user', user)
+                console.log('=originalContent=', originalContent)
+                // 过滤掉当前用户，防止误修改操作
+                return originalContent.filter(content=>content.userName !== user.userName).map((content, index)=>{
                     return {
                         index:index+1,// 用于列表展示的序号
                         key: freshId(),// 用于列表渲染的key
@@ -191,6 +199,7 @@ class _TableController extends Component {
                         userName: content.userName,// 用户名
                         name: content.name,// 姓名
                         mobile: content.phone,// 手机号
+                        password: Encrypt.decryptBy3DES(content.password).toString(),// 密码
                         vendor: content.supplierName,// 供应商
                         role: content.type,// 角色
                         status: content.status,// 状态
@@ -198,7 +207,7 @@ class _TableController extends Component {
                     }
                 })
 
-            // 基础信息-基础物料类型管理
+            // 基础信息-基础货源清单管理
             case 'basic_material_type_management':
                 originalContent = await this.callNetworkRequest({
                     requestUrl: '/material/find/all',
@@ -232,9 +241,12 @@ class _TableController extends Component {
         }
         // console.log(`request: ${requestUrl}',params:${params},'result:${result}`)
         const {data: _data} = result
-        let originalContent =  _data.content
-        // console.log('originalContent=',originalContent)
-        return originalContent
+        if (_data) {
+            let originalContent =  _data.content
+            // console.log('originalContent=',originalContent)
+            return originalContent
+        }
+        return []
     }
 
     // 搜索按钮回调(多页面共用)
@@ -258,7 +270,7 @@ class _TableController extends Component {
                 } else if (value === 'userName' || value === 'name' || value === 'mobile') {
                     return data['userName'].indexOf(searchConditionObject['userName']) > -1
                         || data['name'].indexOf(searchConditionObject['name']) > -1
-                        || data['mobile'] === searchConditionObject['mobile'] // *手机号搜索使用精确匹配
+                        || data['mobile'].indexOf(searchConditionObject['mobile']) > -1
                 } else if (value === 'material' || value === 'materialDescription') {
                     return data['material'].indexOf(searchConditionObject['material']) > -1
                         || data['materialDescription'].indexOf(searchConditionObject['materialDescription']) > -1
@@ -305,7 +317,7 @@ class _TableController extends Component {
         // 为了保持数据一致性（如id、时间等需要从服务器返回的字段），重新请求数据。（TODO:待优化）
         this.setState({
             showModal: false,
-            dataSet:[],
+            dataSet:null,
         })
 
         let dataSet = await this.constructData(selectedTabKey)
@@ -320,6 +332,17 @@ class _TableController extends Component {
     onModalCancelButtonClickedListener = () => {
         this.setState({
             showModal: false
+        })
+    }
+
+    // 联动：Table的条目删除操作
+    onTableItemDeletedListener = (selectedTabKey, deletedItem) => {
+        let immutableDataSet = this.state.immutableDataSet
+        const index = immutableDataSet.findIndex(data => data.key === deletedItem.key)
+        immutableDataSet.splice(index, 1)
+        immutableDataSet = immutableDataSet.map((data, index) => ({...data, index: index + 1}))// 删除后，注意修改序号
+        this.setState({
+            immutableDataSet
         })
     }
 
@@ -394,7 +417,7 @@ class _TableController extends Component {
                     </div>
                 )
                 break
-            // 信息管理-物料类型管理
+            // 信息管理-货源清单管理
             case 'basic_material_type_management':
                 tableComponent = (
                     <div>

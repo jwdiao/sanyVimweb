@@ -16,10 +16,19 @@ const tabs = [
 class _DispatchPage extends Component {
   constructor(props) {
     super(props);
+    console.log('dispatch page props', this.props);
     this.state = {
-      selectedTab: 0,
+      selectedTab: this.props.location.state?this.props.location.state.tab:0,
       hidden: false,
     };
+  }
+
+  componentWillMount() {
+      console.log('_DispatchPage cwm called')
+      this.setState({
+          selectedTab: this.props.location.state?this.props.location.state.tab:0,
+          hidden: false,
+      })
   }
 
   handleTabChange = (tab, index) => {
@@ -31,7 +40,7 @@ class _DispatchPage extends Component {
 
   renderTabContent() {
     const { selectedTab } = this.state;
-
+    console.log('selectedTab', selectedTab);
     let comp;
     switch (selectedTab) {
       case 0:
@@ -41,7 +50,7 @@ class _DispatchPage extends Component {
         comp = <OtherDispatchList />
         break;
       default:
-        comp = 'default';
+        comp = <DeliverDispatchList />
     }
     return comp;
   }
@@ -53,7 +62,7 @@ class _DispatchPage extends Component {
         <CommonHeader navBarTitle="出库" showBackButton={false} />
         <Tabs
           className="tab-common-class"
-          tabBarBackgroundColor="#5a8cff"
+          tabBarBackgroundColor="#48b2f7"
           tabBarInactiveTextColor="#fff"
           tabBarActiveTextColor="#fff"
           tabBarUnderlineStyle={{
@@ -66,7 +75,7 @@ class _DispatchPage extends Component {
 
           }}
           tabs={tabs}
-          initialPage={0}
+          initialPage={this.state.selectedTab}
           onChange={this.handleTabChange}
           tabBarPosition="top"
           renderTab={tab => <span>{tab.title}</span>}
@@ -74,18 +83,13 @@ class _DispatchPage extends Component {
         >
           {this.renderTabContent()}
         </Tabs>
-          {
-              this.state.selectedTab === 0 && (
-                  <AddButton
-                      onClick={()=>{
-                          history.replace('/main/add-dispatch', {from: 'dispatch'})
-                      }}
-                  >
-                      <Icon type={'plus'} style={{color:'white', fontSize:'24px', fontWeight:'bolder'}}/>
-                  </AddButton>
-              )
-          }
-
+        <AddButton
+            onClick={()=>{
+                history.replace('/main/add-dispatch', {from: 'dispatch', tab:this.state.selectedTab})
+            }}
+        >
+            <Icon type={'plus'} style={{color:'white', fontSize:'24px', fontWeight:'bolder'}}/>
+        </AddButton>
       </RootView>
     );
   }
@@ -108,7 +112,7 @@ const AddButton = styled.div`
     align-self: flex-end;
     justify-content: center;
     align-items: center;
-    background:rgba(40, 160, 246, 1);
+    background:rgba(40, 160, 246, 0.7);
     height: 64px;
     width: 64px;
     border-radius: 32px;
@@ -116,7 +120,7 @@ const AddButton = styled.div`
     margin-top: -15vh;
     margin-bottom: 5vh;
     margin-right: 10vw;
-    //&.am-button > .am-button-icon {
-    //     // margin-right: 0;
-    //     // }
+    // :hover{
+    //   background:rgba(40, 160, 246, 1);
+    // }
 `

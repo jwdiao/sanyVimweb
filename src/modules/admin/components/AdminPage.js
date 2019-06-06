@@ -4,17 +4,45 @@
 
 import React, {Component} from 'react';
 import { withRouter } from 'react-router-dom';
-import {Avatar, Button, Icon, Layout, Menu} from 'antd';
+import {Avatar, Button, Icon, Layout, Menu, Popover} from 'antd';
 import styled from "styled-components";
 import {TableController} from "./TableController";
 
-import {superAdminMenuItems as menuItems, Durian} from '../../../utils'
+import {
+    superAdminMenuItems as menuItems,
+    Durian,
+    SIDE_BAR_BACKGROUND_COLOR,
+    PRIMARY_TEXT_COLOR,
+    SIDE_BAR_BACKGROUND_COLOR_DARKER
+} from '../../../utils'
+import {PasswordModifyModal} from "../../../components";
 
 const {
     Header, Sider,
 } = Layout;
 
 const SubMenu = Menu.SubMenu;
+
+const PopOverContent = ({onModifyPasswordCalled, onLogoutCalled}) => {
+    return (
+        <div style={{display:'flex', flexDirection: "column"}}>
+            <Button
+                type={'link'}
+                style={{color:PRIMARY_TEXT_COLOR}}
+                onClick={onModifyPasswordCalled}
+            >
+                修改密码
+            </Button>
+            <Button
+                type={'link'}
+                style={{color:PRIMARY_TEXT_COLOR}}
+                onClick={onLogoutCalled}
+            >
+                退出登录
+            </Button>
+        </div>
+    )
+}
 
 /**
  * 超级管理员首页
@@ -24,7 +52,9 @@ class _AdminPage extends Component {
     loginUser = Durian.get('user');
     state = {
         collapsed: false,
-        selectedTabKey: 'sany_factory'
+        selectedTabKey: 'sany_factory',
+
+        showModal: false,
     };
 
     toggleSideBar = () => {
@@ -33,7 +63,28 @@ class _AdminPage extends Component {
         });
     }
 
-    logout = () => {
+    // 修改密码
+    onModifyPasswordCalled = () => {
+        this.setState({
+            showModal: true
+        })
+    }
+
+    // Modal 确定按钮点击事件监听
+    onModalOkButtonClickedListener = () => {
+        Durian.clear();
+        this.props.history.push('/');
+    }
+
+    // Modal 取消按钮点击事件监听
+    onModalCancelButtonClickedListener = () => {
+        this.setState({
+            showModal: false
+        })
+    }
+
+    // 退出登录
+    onLogoutCalled = () => {
         Durian.clear();
         this.props.history.push('/');
     }
@@ -45,23 +96,42 @@ class _AdminPage extends Component {
                 <Layout>
                     <Sider
                         trigger={null}
-                        collapsible
+                        collapsible={false}
                         collapsed={collapsed}
+                        style={{backgroundColor: SIDE_BAR_BACKGROUND_COLOR}}
                     >
-                        <LogoIconView>
-                            <Avatar
-                                size={40}
-                                src={require('../../../assets/images/logo.png')}/>
-                        </LogoIconView>
+                        <LogoContainer>
+                            <LogoIconView>
+                                <Avatar
+                                    size={26}
+                                    src={require('../../../assets/images/logo.png')}/>
+                            </LogoIconView>
+                            {
+                                !collapsed && (
+                                    <div style={{color: '#8094ac', fontSize:'20px', marginLeft:'10px'}}>VMI管理系统</div>
+                                )
+                            }
+                        </LogoContainer>
                         <Menu
                             theme="dark"
                             mode="inline"
                             defaultSelectedKeys={['sany_factory']}
                             selectedKeys={[selectedTabKey]}
+                            style={{backgroundColor: 'transparent'}}
                         >
                             <SubMenu
                                 key="admin"
-                                title={<span><Icon type="team"/><span>基础数据管理</span></span>}
+                                title={
+                                    <span>
+                                        <span className="iconfont" style={{fontSize:'1rem', color:'#8094ac', marginRight: '0.6rem'}}>&#xe618;</span>
+                                        {
+                                            !collapsed && (
+                                                <span>基础数据管理</span>
+                                            )
+                                        }
+                                    </span>
+                                }
+                                style={{backgroundColor: 'transparent'}}
                             >
                                 {
                                     menuItems.map(item => {
@@ -76,7 +146,7 @@ class _AdminPage extends Component {
                                                     })
                                                 }}
                                             >
-                                                <Icon type={item.iconType}/>
+                                                {/*<Icon type={item.iconType}/>*/}
                                                 <span>{item.title}</span>
                                             </Menu.Item>
                                         )
@@ -97,9 +167,21 @@ class _AdminPage extends Component {
                             </HeaderContainer>
                             <HeaderContainer>
                                 <div style={{fontSize: 18, fontWeight: "normal"}}>{this.loginUser?this.loginUser.name:''}，欢迎您</div>
-                                <Button
-                                    style={{margin: '0 30px 0 20px'}}
-                                    type="primary" icon="logout" size="default" onClick={this.logout}>退出</Button>
+                                <Popover content={
+                                    <PopOverContent
+                                        onModifyPasswordCalled={this.onModifyPasswordCalled}
+                                        onLogoutCalled={this.onLogoutCalled}
+                                    />
+                                }>
+                                    <Button
+                                        style={{margin: '0 30px 0 20px', color: PRIMARY_TEXT_COLOR}}
+                                        type="link"
+                                        icon="setting"
+                                        size="large"
+                                    >
+                                        设置
+                                    </Button>
+                                </Popover>
                             </HeaderContainer>
                         </StyledHeader>
                         <StyledContent>
@@ -110,7 +192,11 @@ class _AdminPage extends Component {
                         {/*<Footer>Footer</Footer>*/}
                     </Layout>
                 </Layout>
-
+                <PasswordModifyModal
+                    modalVisibility={this.state.showModal}
+                    onOkClickedListener={this.onModalOkButtonClickedListener}
+                    onCancelClickedListener={this.onModalCancelButtonClickedListener}
+                />
             </RootView>
         );
     }
@@ -122,14 +208,23 @@ const RootView = styled.div`
   height: calc(100vh);
   // border: aqua 2px solid;
 `
-const LogoIconView = styled(Avatar)`
-  height: 80px;
-  width: 100%;
-  background: transparent;
-  margin-top: 16px;
-  margin-bottom: 10px;
+const LogoContainer = styled.div`
+  display: flex;
+  flex-direction: row;
   justify-content: center;
   align-items: center;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  background-color: ${SIDE_BAR_BACKGROUND_COLOR_DARKER};
+`
+const LogoIconView = styled.div`
+  display: flex;
+  height: 50px;
+  // width: 100%;
+  background: transparent;
+  justify-content: center;
+  align-items: center;
+  // border: #b3d4fc 2px solid;
 `
 const StyledHeader = styled(Header)`
   display: flex;
@@ -140,7 +235,7 @@ const StyledHeader = styled(Header)`
   padding: 0;
   height: 60px;
   color: #292929;
-  font-size: 26px;
+  font-size: 22px;
   font-weight: bold;
 `
 const HeaderContainer = styled.div`

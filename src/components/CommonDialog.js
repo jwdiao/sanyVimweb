@@ -41,18 +41,25 @@ class _CommonDialog extends Component {
                 // title={headerText}
                 wrapProps={{onTouchStart: this.onWrapTouchStart}}
                 // afterClose={() => { alert('afterClose'); }}
+                style={{
+                    width:'80%'
+                }}
             >
                 <ModalRootContainer>
                     <ModalHeader>{headerText}</ModalHeader>
-                    <ModalContent>
+                    
+                    { 
+                        contents?<ModalContent>
                         {
                             keys.map(key=>{
                                 return (
-                                    <div key={key}>{`${key}: ${contents[key]}`}</div>
+                                    <ContentItem key={key}>{`${key}: ${contents[key]}`}</ContentItem>
                                 )
                             })
                         }
-                    </ModalContent>
+                        </ModalContent>:null
+                    }
+
                     <ModalFooter>
                         <StyledButton isEnabled={false} onClick={() => {
                             onBtn1Clicked()
@@ -72,7 +79,7 @@ export const CommonDialog = _CommonDialog;
 const ModalRootContainer = styled.div`
     display: flex;
     flex-direction: column;
-    height: 210px;
+    // height: 210px;
     text-align: center;
     justify-content: center;
     align-items: center;
@@ -86,7 +93,7 @@ const ModalHeader = styled.div`
     align-items: center;
     text-align: center;
     color: rgba(48, 48, 48, 1);
-    font-size: 18px;
+    font-size: 22px;
     font-weight: bold;
     // border: 1px yellow solid;
 `
@@ -96,16 +103,21 @@ const ModalContent = styled.div`
     flex:1;
     flex-direction: column;
     width: 100%;
-    height: 100px;
+    padding:10px;
     text-align: start;
     font-size: 14px;
     color: rgba(48, 48, 48, 1);
     overflow: scroll;
     // border: 1px green solid;
 `
+const ContentItem = styled.div`
+    padding:5px 0;
+    font-size:16px;
+`
 const ModalFooter = styled.div`
     display: flex;
     width: 100%;
+    margin:24px 0 12px 0;
     height: 40px;
     justify-content: center;
     align-items: center;
@@ -113,8 +125,8 @@ const ModalFooter = styled.div`
 `
 const StyledButton = styled.div`
     display: flex;
-    height: 26px;
-    width: 80px;
+    height: 40px;
+    width: 100px;
     justify-content: center;
     align-items: center;
     text-align: center;

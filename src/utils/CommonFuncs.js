@@ -1,3 +1,7 @@
+import {DATE_FORMAT} from "./Constants";
+import moment from "moment";
+
+const _ = require('lodash')
 export const generateRandomColor = (index) => {
     if (index % 4 === 0) {
         return 'rgba(233, 106, 161, 1)'
@@ -8,6 +12,13 @@ export const generateRandomColor = (index) => {
     } else {
         return 'rgba(255, 196, 114, 1)'
     }
+}
+
+export function formatDate(dateString) {
+    if (dateString && dateString!=='') {
+        return moment(dateString).format(DATE_FORMAT)
+    }
+    return '--'
 }
 
 export const isPcBrowser = () => {
@@ -23,4 +34,20 @@ export const isPcBrowser = () => {
         }
     }
     return flag;
+}
+
+export function isEmpty(testString) {
+    return !testString || testString.length === 0 || testString === ''
+}
+
+export function containsWhiteSpaces(orgString) {
+    console.log('/^[^\\s]*$/.test(orgString)', /^[^\s]*$/.test(orgString))
+    return /^[^\s]*$/.test(orgString)
+}
+
+export function trimAllWhiteSpaces(orgString) {
+    console.log('orgString', orgString)
+    let mString = _.replace(orgString, /^[^\s]*$/, '')
+    console.log('mString', mString)
+    return mString
 }

@@ -109,7 +109,7 @@ const InputContainerView = styled.div`
   width: 100%;
   height: 100%;
   padding: 10px 10px;
-  // border: #5a8cff 2px solid;
+  // border: #48b2f7 2px solid;
 `
 
 const InputButtonView = styled.div`

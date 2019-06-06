@@ -23,8 +23,7 @@ class _TransferPage extends Component {
                 <div style={{
                     display:'flex',
                     flex:1,
-                    flexDirection:'column',
-                    background:'green'
+                    flexDirection:'column'
                 }}>
                     <TransferList/>
                 </div>
@@ -58,7 +57,7 @@ const AddButton = styled.div`
     align-self: flex-end;
     justify-content: center;
     align-items: center;
-    background:rgba(40, 160, 246, 1);
+    background:rgba(40, 160, 246, 0.7);
     height: 64px;
     width: 64px;
     border-radius: 32px;
@@ -66,7 +65,4 @@ const AddButton = styled.div`
     margin-top: -15vh;
     margin-bottom: 5vh;
     margin-right: 10vw;
-    //&.am-button > .am-button-icon {
-    //     // margin-right: 0;
-    //     // }
 `

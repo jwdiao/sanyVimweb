@@ -1,8 +1,6 @@
 import React, {Component} from "react";
-import {Icon, NavBar, Popover, SearchBar} from "antd-mobile";
+import {Icon, NavBar} from "antd-mobile";
 import {withRouter} from 'react-router-dom'
-// const Item = Popover.Item;
-// const myImg = src => <img src={`https://gw.alipayobjects.com/zos/rmsportal/${src}.svg`} className="am-icon am-icon-xs" alt="" />;
 
 class _CommonHeader extends Component{
     constructor(props){
@@ -57,7 +55,12 @@ class _CommonHeader extends Component{
         
     }
     render(){
-        const {showBackButton, navBarTitle, showMenuButton, history} = this.props
+        const {
+            showBackButton,
+            navBarTitle,
+            showMenuButton,
+            menuButton,
+            history} = this.props
         return (
             <div>
                 <NavBar
@@ -81,31 +84,10 @@ class _CommonHeader extends Component{
                             
                         }
                     }}
-                    rightContent={showMenuButton?
-                            <Popover mask
-                                    overlayClassName="popup-search-bar"
-                                    overlayStyle={{ color: 'currentColor' }}
-                                    visible={this.state.visible}
-                                    overlay={
-                                            <SearchBar placeholder="请输入检索条件"
-                                                onCancel={this.onSearchCanceled}
-                                            />
-                                    }
-                                    align={{
-                                        overflow: { adjustY: 0, adjustX: 10 },
-                                        offset: [50, 0],
-                                    }}
-                                    getTooltipContainer={() => {console.log(document.getElementById('searchBarContainer')) ;return document.getElementById('searchBarContainer')}}
-                                    onVisibleChange={this.handleVisibleChange}
-                                    onSelect={this.onSelect}
-                            >
-                            <span className='iconfont' style={{ fontSize: '1.2rem', color: '#fff',}}>&#xe605;</span>
-                            </Popover>
-                            
-                        : null
+                    rightContent={showMenuButton ? menuButton : null
                     }
                 >{navBarTitle}</NavBar>
-                <div id="searchBarContainer" style={{zIndex:'998',height:'100%'}} onClick={(e) => {e.preventDefault();e.stopPropagation();e.nativeEvent.stopImmediatePropagation();}}  onTouchStart={(e) =>{e.preventDefault();e.stopPropagation();e.nativeEvent.stopImmediatePropagation();}}></div>
+                {/*<div id="searchBarContainer" style={{zIndex:'998',height:'100%'}} onClick={(e) => {e.preventDefault();e.stopPropagation();e.nativeEvent.stopImmediatePropagation();}}  onTouchStart={(e) =>{e.preventDefault();e.stopPropagation();e.nativeEvent.stopImmediatePropagation();}} />*/}
             </div>
         )
     }

@@ -2,9 +2,12 @@ import React, { Component } from 'react';
 import styled from "styled-components";
 import { WhiteSpace } from 'antd-mobile';
 import {withRouter} from 'react-router-dom'
+import { Modal } from "antd-mobile";
 
 import OperationList from './OperationList'
 import { Durian } from '../../../utils'
+
+const alert = Modal.alert;
 
 class _MyPage extends Component {
 
@@ -27,23 +30,46 @@ class _MyPage extends Component {
       case 'view_report':
         this.props.history.push('/look-over', {from: 'my'})
         break
+      case 'change_password':
+        this.props.history.push('/changepwd', {from: 'my'})
+        break
+      case 'log_off':
+        alert('退出确认', '确认退出登录？', [
+          { text: '取消', onPress: () => console.log('cancel') },
+          { text: '确认', onPress: () => this.logOff() },
+      ])
+        break
       default:
         break
     }
   }
 
+  logOff = () => {
+    Durian.clear();
+    this.props.history.push('/');
+  }
   render() {
     const data = [
       {
         key: "change_vendor",
-        icon:<span className='iconfont' style={{ fontSize: '1rem', color: '#fff', padding:'0.5rem', borderRadius:'0.2rem',  backgroundColor:'#4EC7FF' }}>&#xe611;</span>,
+        icon:<span className='iconfont' style={{ fontSize: '1rem', color: '#fff', padding:'0.3rem', borderRadius:'0.2rem',  backgroundColor:'#4EC7FF' }}>&#xe611;</span>,
         text:"供应商切换"
       },
       {
         key: "view_report",
-        icon:<span className='iconfont' style={{ fontSize: '1rem', color: '#fff', padding:'0.5rem', borderRadius:'0.2rem',  backgroundColor:'#47F3A0' }}>&#xe610;</span>,
+        icon:<span className='iconfont' style={{ fontSize: '1rem', color: '#fff', padding:'0.3rem', borderRadius:'0.2rem',  backgroundColor:'#47F3A0' }}>&#xe610;</span>,
         text:"查询报表信息"
-      }
+      },
+      {
+        key: "change_password",
+        icon:<span className='iconfont' style={{ fontSize: '1.2rem', color: '#fff', padding:'0.3rem', borderRadius:'0.2rem',  backgroundColor:'#FFC64D' }}>&#xe647;</span>,
+        text:"修改密码"
+      },
+      {
+        key: "log_off",
+        icon:<span className='iconfont' style={{ fontSize: '1.2rem', color: '#fff', padding:'0.3rem', borderRadius:'0.2rem',  backgroundColor:'#FF7E7E' }}>&#xe657;</span>,
+        text:"退出"
+      },
     ];
     return (
       <RootView>
@@ -73,6 +99,7 @@ class _MyPage extends Component {
             />
           </OperationPanel>
         </MainPanel>
+       
       </RootView>
     );
   }

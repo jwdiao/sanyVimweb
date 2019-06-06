@@ -1,12 +1,11 @@
 // 出库-配送出库/其他出库
 export const dispatchItemsMap = {
-    number: '号码',
-    vmiFactory: 'VMI工厂',
-    inventoryState: '状态',
-
-    material:'物料',
+    number: '出库单号',
+    createTime: '出库时间',
+    outName: '操作员',
+    material:'物料编码',
     materialDescription:'物料描述',
-    quantity: '配送数量',
+    quantity: '出库数量',
     time: '配送时间',
     reason:'原因',
 }

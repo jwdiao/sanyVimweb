@@ -10,10 +10,10 @@ import {
     roleList,
     validStateList,
     http,
-    TABLE_OPERATION_DELETE,
-    TABLE_OPERATION_EDIT,
-    TABLE_OPERATION_STATUS, ERROR_CODE_ADMIN_SANY_FACTORY_SUBMIT_FAIL, ERROR_CODE_ADMIN_SANY_FACTORY_OTHER_ERROR
+    ERROR_CODE_ADMIN_SANY_FACTORY_SUBMIT_FAIL,
+    ERROR_CODE_ADMIN_SANY_FACTORY_OTHER_ERROR, isEmpty, Encrypt
 } from "../../../utils";
+import {TableButton} from "./TableButton";
 
 const FormItem = Form.Item;
 const EditableContext = React.createContext();
@@ -22,7 +22,7 @@ const Option = Select.Option
 
 class EditableCell extends React.Component {
 
-    getInput = (columnId, record) => {
+    getInput = (columnId, record, tableType) => {
         const {_unitList, _vendorList, inputType} = this.props
         if (inputType === 'selector') {
             let options = []
@@ -42,7 +42,10 @@ class EditableCell extends React.Component {
                 default:
                     break
             }
-            return <Select>
+            return <Select
+                // disabled={columnId==='status' && tableType==='basic_material_type_management'}
+                disabled={columnId === 'status'}
+            >
                 {
                     options.map(option => {
                         return (
@@ -73,7 +76,7 @@ class EditableCell extends React.Component {
                 }
             </Select>
         } else if (inputType === 'multi_selector') {
-            console.log('record', record)
+            // console.log('record', record)
             return <Select
                 style={{width: '100%'}}
                 mode="multiple"
@@ -95,9 +98,26 @@ class EditableCell extends React.Component {
                     })
                 }
             </Select>
+        } else if (inputType === 'input_password') {
+            return <Input.Password placeholder="请输入密码"/>
         }
-        return <Input/>;
+        // console.log('record', record, 'columnId', columnId)
+        // 对于超级管理员、VMI工厂管理员，不能选择供应商
+        return <Input
+            disabled={columnId === 'vendor' && (record.role === 1 || record.role === 2)}
+        />;
     };
+
+    mobileValidValidator = (rule, value, callback, source, options) => {
+        if (!isEmpty(value)) {
+            if (/^1[3|4|5|6|7|8|9][0-9]{9}$/.test(value)) {
+                callback()
+            } else {
+                callback('请输入有效的手机号码！')
+            }
+        }
+        callback()
+    }
 
     render() {
         const {
@@ -109,9 +129,10 @@ class EditableCell extends React.Component {
             inputType,
             record,
             index,
+            tableType,
             ...restProps
         } = this.props;
-        // console.log('renderrenderrender',this.props)
+        // console.log('renderrenderrender',dataIndex, record)
         return (
             <EditableContext.Consumer>
                 {(form) => {
@@ -120,14 +141,18 @@ class EditableCell extends React.Component {
                     let vendorInitialValueList = []
                     // 特殊处理：供应商列表是多选，设定默认值时，提前计算
                     if (dataIndex === 'vendor' && record[dataIndex].length > 0) {
-                        console.log('----', record[dataIndex], 'length', record[dataIndex].length)
+                        // console.log('----', record[dataIndex])
                         const splittedVendorName = record[dataIndex].substr(0, record[dataIndex].length - 1)
                         const splittedVendorNameList = splittedVendorName.split(',').filter(i => i !== '')
-                        console.log('splittedVendorNameList', splittedVendorNameList)
+                        // console.log('splittedVendorNameList', splittedVendorNameList)
                         vendorInitialValueList = splittedVendorNameList.map((vendorName => {
                             return _vendorList.filter(vendor => vendor.label === vendorName)[0].value
                         }))
-                        console.log('vendorInitialValueList', vendorInitialValueList)
+                        // console.log('vendorInitialValueList', vendorInitialValueList)
+                    }
+
+                    if (dataIndex === 'status' && record) {
+                        // console.log('dataIndex', dataIndex, 'record',record)
                     }
 
                     return (
@@ -136,12 +161,15 @@ class EditableCell extends React.Component {
                                 editing ? (
                                     <FormItem style={{margin: 0}}>
                                         {getFieldDecorator(dataIndex, {
-                                            rules: [{
-                                                required: true,
-                                                message: `请输入 ${title}!`,
-                                            }],
+                                            rules: [
+                                                {
+                                                    required: !(dataIndex === 'vendor' && (record.role === 1 || record.role === 2)),// 对于超级管理员、VMI工厂管理员，不强制（不必）输入供应商
+                                                    message: `请输入 ${title}!`,
+                                                },
+                                                {pattern: /^[^\s]*$/, message: '该字段不允许输入空格!'},
+                                            ],
                                             initialValue: dataIndex === 'vendor' ? vendorInitialValueList : record[dataIndex],
-                                        })(this.getInput(dataIndex, record))}
+                                        })(this.getInput(dataIndex, record, tableType))}
                                     </FormItem>
                                 ) : (
                                     dataIndex === 'status' && record[dataIndex] !== ''
@@ -149,7 +177,15 @@ class EditableCell extends React.Component {
                                         : (
                                             dataIndex === 'role' && record[dataIndex] !== ''
                                                 ? roleList.filter(role => role.value === parseInt(record[dataIndex]))[0].label
-                                                : restProps.children
+                                                : (
+                                                    dataIndex === 'vendor' && record[dataIndex] !== ''
+                                                        ? record[dataIndex].substr(0, record[dataIndex].length - 1)
+                                                        : (
+                                                            dataIndex === 'password' && record[dataIndex] !== ''
+                                                                ? '••••••••'
+                                                                : restProps.children
+                                                        )
+                                                )
                                         )
                                 )
                             }
@@ -165,7 +201,7 @@ class _AdminTable extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            data: [],
+            data: null,
             columns: [],
             editingKey: '',
             currentPage: 1,
@@ -197,7 +233,7 @@ class _AdminTable extends Component {
             message.error('获取物料单位失败！请稍候重试。')
         }
 
-        const result2 = await http.post('/supplier/supplierList', {})
+        const result2 = await http.post('/supplier/supplierList', {status: 1})
         if (result2.ret === '200') {
             this.setState({
                 _vendorList: result2.data.content.map(item => ({
@@ -253,7 +289,7 @@ class _AdminTable extends Component {
         return baseColumnsArray.concat(this.getOperationFields(tableType))
     }
 
-    getOperationFields = () => {
+    getOperationFields = (tableType) => {
         return [
             {
                 title: '操作',
@@ -267,61 +303,61 @@ class _AdminTable extends Component {
                                 <OperationArea>
                                     <EditableContext.Consumer>
                                         {form => (
-                                            <a
-                                                href="javascript:;"
+                                            <TableButton
+                                                type={'save'}
                                                 onClick={() => this.save(form, record)}
-                                                style={{marginRight: 8}}
-                                            >
-                                                保存
-                                            </a>
+                                            />
                                         )}
                                     </EditableContext.Consumer>
                                     <Popconfirm
                                         title="确定取消吗?"
                                         onConfirm={() => this.cancel(record.key)}
                                     >
-                                        <a>取消</a>
+                                        <TableButton
+                                            type='cancel'
+                                        />
                                     </Popconfirm>
                                 </OperationArea>
                             ) : (
                                 <OperationArea>
-                                    <EditableContext.Consumer>
-                                        {
-                                            form => (
-                                                <Popconfirm
-                                                    title={record.status === 1 ? "确定停用吗?" : "确定启用吗?"}
-                                                    onConfirm={() => this.changeStatus(form, record)}
-                                                >
-                                                    <OperationButton
-                                                        disabled={editingKey !== ''}
-                                                        color={TABLE_OPERATION_STATUS}
-                                                    >
-                                                        {record.status === 1 ? "停用" : "启用"}
-                                                    </OperationButton>
-                                                </Popconfirm>
-                                            )
-                                        }
-                                    </EditableContext.Consumer>
+                                    {/*{*/}
+                                    {/*    tableType !== 'sany_factory' &&*/}
+                                    {/*    <EditableContext.Consumer>*/}
+                                    {/*        {*/}
+                                    {/*            form => (*/}
+                                    {/*                <Popconfirm*/}
+                                    {/*                    title={record.status === 1 ? "确定停用吗?" : "确定启用吗?"}*/}
+                                    {/*                    onConfirm={() => this.changeStatus(form, record)}*/}
+                                    {/*                >*/}
+                                    {/*                    <TableButton*/}
+                                    {/*                        disabled={editingKey !== ''}*/}
+                                    {/*                        type='save'*/}
+                                    {/*                        customizedText={record.status === 1 ? "停用" : "启用"}*/}
+                                    {/*                    />*/}
+                                    {/*                </Popconfirm>*/}
+                                    {/*            )*/}
+                                    {/*        }*/}
+                                    {/*    </EditableContext.Consumer>*/}
+                                    {/*}*/}
 
-                                    <OperationButton
+                                    <TableButton
                                         disabled={editingKey !== ''}
-                                        color={TABLE_OPERATION_EDIT}
+                                        type='edit'
                                         onClick={() => this.edit(record.key)}
-                                    >
-                                        编辑
-                                    </OperationButton>
+                                    />
 
-                                    <Popconfirm
-                                        title="确定删除吗?"
-                                        onConfirm={() => this.delete(record.key)}
-                                    >
-                                        <OperationButton
-                                            disabled={editingKey !== ''}
-                                            color={TABLE_OPERATION_DELETE}
-                                        >
-                                            删除
-                                        </OperationButton>
-                                    </Popconfirm>
+                                    {/*{*/}
+                                    {/*    tableType !== 'sany_factory' &&*/}
+                                    {/*    <Popconfirm*/}
+                                    {/*        title="确定删除吗?"*/}
+                                    {/*        onConfirm={() => this.delete(record.key)}*/}
+                                    {/*    >*/}
+                                    {/*        <TableButton*/}
+                                    {/*            disabled={editingKey !== ''}*/}
+                                    {/*            type='delete'*/}
+                                    {/*        />*/}
+                                    {/*    </Popconfirm>*/}
+                                    {/*}*/}
 
                                 </OperationArea>
                             )}
@@ -346,6 +382,7 @@ class _AdminTable extends Component {
         // console.log('_unitList', _unitList, '_vendorList', _vendorList)
         form.validateFields(async (error, row) => {
             if (error) {
+                console.log('error', error, row)
                 return;
             }
 
@@ -357,7 +394,6 @@ class _AdminTable extends Component {
 
                 let params = {
                     id: item.id,
-                    status: row.status,
                 }
                 let requestUrl = ''
                 switch (tableType) {
@@ -366,6 +402,7 @@ class _AdminTable extends Component {
                         params = Object.assign({}, params, {
                             code: row.sanyId,
                             name: row.sanyName,
+                            status: row.status,
                         })
                         break
                     case 'vendor':
@@ -373,6 +410,7 @@ class _AdminTable extends Component {
                         params = Object.assign({}, params, {
                             code: row.vendorCode,
                             name: row.vendorName,
+                            status: row.status,
                         })
                         break
                     case 'user':
@@ -391,10 +429,11 @@ class _AdminTable extends Component {
                         params = Object.assign({}, params, {
                             userName: row.userName,
                             name: row.name,
-                            // password:row.password,
+                            password: Encrypt.encryptBy3DES(row.password).toString(),
                             phone: row.mobile,
                             supplierCode: vendorStr,
                             type: row.role,
+                            status: row.status,
                         })
                         break
                     // TODO：基础物料管理，接口没有提供修改状态的接口
@@ -416,7 +455,7 @@ class _AdminTable extends Component {
                 })
 
                 // console.log('result =' ,result)
-                if (result) {
+                if (result && result.ret === '200') {
                     // 对基础物料信息的 单位显示，要特别处理
                     if (tableType === 'basic_material_type_management') {
                         newData.splice(index, 1, {
@@ -456,6 +495,7 @@ class _AdminTable extends Component {
                         data: newData,
                         editingKey: ''
                     });
+                    message.success('操作成功！')
                 } else {
                     message.error(`数据提交失败！请稍候重试。(${ERROR_CODE_ADMIN_SANY_FACTORY_SUBMIT_FAIL})`)
                 }
@@ -513,7 +553,7 @@ class _AdminTable extends Component {
                 })
 
                 // console.log('result =' ,result)
-                if (result) {
+                if (result && result.ret === '200') {
                     item.status = newStatus
                     newData.splice(index, 1, {
                         ...item,
@@ -524,6 +564,8 @@ class _AdminTable extends Component {
                         data: newData,
                         editingKey: ''
                     });
+
+                    message.success('操作成功！')
                 } else {
                     message.error(`数据提交失败！请稍候重试。(${ERROR_CODE_ADMIN_SANY_FACTORY_SUBMIT_FAIL})`)
                 }
@@ -542,7 +584,7 @@ class _AdminTable extends Component {
 
     // 删除
     delete = async (key) => {
-        const {tableType} = this.props
+        const {tableType, onTableItemDeletedListener} = this.props
         let newData = [...this.state.data];
         const index = newData.findIndex(item => key === item.key);
         if (index > -1) {
@@ -576,16 +618,25 @@ class _AdminTable extends Component {
 
             // console.log('result =' ,result)
             if (result) {
-                newData.splice(index, 1)
-                newData = newData.map((data, index) => ({...data, index: index + 1}))// 删除后，注意修改序号
-                this.setState({
-                    data: newData,
-                    editingKey: ''
-                });
+                if (result.ret === '200') {
+                    const item = newData[index];
+                    newData.splice(index, 1)
+                    newData = newData.map((data, index) => ({...data, index: index + 1}))// 删除后，注意修改序号
+                    this.setState({
+                        data: newData,
+                        editingKey: ''
+                    }, () => {
+                        if (onTableItemDeletedListener) {
+                            onTableItemDeletedListener(tableType, item)
+                        }
+                    });
+                    message.success('操作成功！')
+                } else if (result.ret === '500') {
+                    message.error(`删除失败！${result.msg}`)
+                }
             } else {
-                message.error(`数据提交失败！请稍候重试。(${ERROR_CODE_ADMIN_SANY_FACTORY_SUBMIT_FAIL})`)
+                message.error(`数据提交失败！请稍候重试。(${ERROR_CODE_ADMIN_SANY_FACTORY_OTHER_ERROR})`)
             }
-
         } else {
             console.log('delete button clicked! error!', key)
             message.error(`数据提交失败！请稍候重试。(${ERROR_CODE_ADMIN_SANY_FACTORY_OTHER_ERROR})`)
@@ -601,7 +652,7 @@ class _AdminTable extends Component {
             result = await http.get(requestUrl)
         }
         console.log(`request: ${requestUrl}`, 'params:', params, 'result:', result)
-        return result && result.ret === '200'
+        return result
     }
 
 
@@ -612,7 +663,8 @@ class _AdminTable extends Component {
     }
 
     render() {
-        const {_unitList, _vendorList, columns: _columns} = this.state
+        const {data, _unitList, _vendorList, columns: _columns} = this.state
+        const {tableType} = this.props
         console.log('_vendorList', _vendorList)
         const components = {
             body: {
@@ -643,11 +695,16 @@ class _AdminTable extends Component {
                                                 : 'text'
                                         )
                                 )
-                                : 'text'
+                                : (
+                                    col.dataIndex === 'password'
+                                        ? 'input_password'
+                                        : 'text'
+                                )
                         ),
                     dataIndex: col.dataIndex,
                     title: col.title,
                     editing: this.isEditing(record),
+                    tableType: tableType,
                 }),
             };
         });
@@ -658,12 +715,14 @@ class _AdminTable extends Component {
                     className="data-board-table"
                     // bodyStyle={{minHeight: 'calc(100vh - 280px)', maxHeight: 'calc(100vh - 280px)'}}
                     components={components}
-                    bordered
-                    dataSource={this.state.data}
+                    bordered={false}
+                    dataSource={data}
+                    loading={data === null}
                     columns={columns}
                     rowClassName="editable-row"
                     pagination={{
-                        total: this.state.data.length,
+                        showQuickJumper: true,
+                        total: data !== null ? data.length : 0,
                         // defaultCurrent:this.state.currentPage,
                         onChange: this.onPageChange,
                     }}
@@ -681,10 +740,4 @@ const OperationArea = styled.div`
   flex-direction: row;
   justify-content: center;
   align-items: center;
-`
-
-const OperationButton = styled.a`
-  margin-left:4%; 
-  margin-right:4%; 
-  color:${p => (p.disabled ? 'gray' : p.color)};
 `

@@ -5,9 +5,9 @@ import {Button} from "antd";
 import styled from "styled-components";
 
 const tabs = [
-    {title: '工厂发货信息', sub: '1'},
-    {title: 'VMI收货信息', sub: '2'},
-    {title: '待发货信息', sub: '3'},
+    {title: '在途管理', sub: '1'},
+    {title: '收货信息查询', sub: '2'},
+    {title: '发货管理', sub: '3'},
 ];
 
 class _ShippingMobilePage extends Component {
@@ -28,7 +28,7 @@ class _ShippingMobilePage extends Component {
                         height: '100%',
                         backgroundColor: '#fff'
                     }}>
-                        工厂发货信息
+                        在途管理
                     </div>
                     <div style={{
                         display: 'flex',
@@ -38,7 +38,7 @@ class _ShippingMobilePage extends Component {
                         height: '100%',
                         backgroundColor: '#fff'
                     }}>
-                        VMI收货信息
+                        收货信息查询
                     </div>
                     <div style={{
                         display: 'flex',
@@ -47,7 +47,7 @@ class _ShippingMobilePage extends Component {
                         height: '100%',
                         backgroundColor: '#fff'
                     }}>
-                        待发货信息
+                        发货管理
                     </div>
                 </Tabs>
                 <Button

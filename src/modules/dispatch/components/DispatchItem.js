@@ -1,11 +1,11 @@
 import React, {Component} from 'react';
 import styled from "styled-components";
-
+import {Modal} from "antd-mobile";
 import { Collapse } from 'antd';
 import {dispatchItemsMap, generateRandomColor} from "../../../utils";
 
 const Panel = Collapse.Panel;
-
+const alert = Modal.alert;
 const _ = require('lodash')
 
 function callback(key) {
@@ -17,10 +17,7 @@ class _DispatchItem extends Component {
     render() {
         const { data, rowID, dispatchType } = this.props
         const { id, materials } = data
-        let keys = _.keys(data)
-        console.log('data:', data);
-        // let index = keys.findIndex(key => key === 'id')
-        // keys.splice(index,1)
+        
         return (
             <RootView>
                 <IndicatorLeftBar color={generateRandomColor(rowID)}/>
@@ -47,29 +44,37 @@ class _DispatchItem extends Component {
                         header={
                         <HeaderView>
                             <HeaderTextView>
-                                {
-                                    keys.slice(3,6).map((_key, index)=>{//1: id, 2: status ignore
-                                        // console.log('_key, index', _key, index)
-                                        return (
-                                            <ItemWrapper
-                                                key={_key}
-                                                style={{flexDirection:'row'}}>
-                                                <ItemView>
-                                                    <TitleText style={{display:'flex', flex:0.3, textAlign:'justify'}}>{dispatchItemsMap[_key]}</TitleText>
-                                                    <HeaderContentText style={{display:'flex', flex:0.7}}>{data[_key]}</HeaderContentText>
-                                                </ItemView>
-                                            </ItemWrapper>
-
-                                        )
-                                    })
-                                }
+                                <ItemWrapper
+                                    style={{flexDirection:'row'}}>
+                                    <ItemView>
+                                        <TitleText style={{display:'flex', flex:0.3, textAlign:'justify'}}>{dispatchItemsMap['number']}</TitleText>
+                                        <HeaderContentText style={{display:'flex', flex:0.7}}>{data['number']}</HeaderContentText>
+                                    </ItemView>
+                                </ItemWrapper>
+                                <ItemWrapper
+                                    style={{flexDirection:'row'}}>
+                                    <ItemView>
+                                        <TitleText style={{display:'flex', flex:0.3, textAlign:'justify'}}>{dispatchItemsMap['outName']}</TitleText>
+                                        <HeaderContentText style={{display:'flex', flex:0.7}}>{data['outName']}</HeaderContentText>
+                                    </ItemView>
+                                </ItemWrapper>
+                                <ItemWrapper
+                                    style={{flexDirection:'row'}}>
+                                    <ItemView>
+                                        <TitleText style={{display:'flex', flex:0.3, textAlign:'justify'}}>{dispatchItemsMap['createTime']}</TitleText>
+                                        <HeaderContentText style={{display:'flex', flex:0.7}}>{data['createTime']}</HeaderContentText>
+                                    </ItemView>
+                                </ItemWrapper>
                             </HeaderTextView>
                             { dispatchType === 'others' && true && (
                                 <ReverseButton
                                     onClick={(event)=>{
                                         event.stopPropagation();
                                         console.log('ReverseButton clicked! data id = ',id)
-                                        this.props.onReverse(id);
+                                        alert('冲销确认', '是否冲销该条记录？', [
+                                            { text: '取消', onPress: () => console.log('cancel') },
+                                            { text: '确认', onPress: () => this.props.onReverse(id) },
+                                        ])
                                     }}
                                 >
                                     冲销
@@ -83,9 +88,11 @@ class _DispatchItem extends Component {
                         <ContentView>
                             {
                                 materials.map((material, mIndex)=>{
+                                    const { units } = material;
                                     let _keys = _.keys(material)
                                     let id = material.id;
                                     let index = _keys.findIndex(key => key === 'id')
+                                    _.remove(_keys, i => i === 'units');
                                     _keys.splice(index,1)
                                     let itemStyle = {
                                         display:'flex', 
@@ -104,12 +111,16 @@ class _DispatchItem extends Component {
                                         >
                                             {
                                                 _keys.map((key,index)=>{
+                                                    let val = material[key];
+                                                    if (_.indexOf(['quantity', 'inInventoryQuantity', 'qualifiedQuantity'], key) >= 0) {
+                                                        val = val + ' ' + units;
+                                                    }
                                                     return (
                                                         <ItemWrapper
                                                             key={key}>
                                                             <ItemView>
                                                                 <TitleText>{dispatchItemsMap[key]}</TitleText>
-                                                                <ContentContentText>{material[key]}</ContentContentText>
+                                                                <ContentContentText>{val}</ContentContentText>
                                                             </ItemView>
                                                             <SeparateLine/>
                                                         </ItemWrapper>
@@ -141,19 +152,7 @@ const RootView = styled.div`
     justify-content: center;
     align-items: center;
     border-radius: 4px;
-    position:relative;
-    overflow:hidden;
-    padding-bottom:16px;
-    ::before {
-        content: ' ';
-        width: 100%;
-        height: 0;
-        position: absolute;
-        bottom: -4px;
-        border-bottom: 8px dotted #eee;
-        left: 4px;
-        right: 4px;
-    }
+    
 `
 const IndicatorLeftBar = styled.div`
     display: flex;
@@ -170,8 +169,8 @@ const HeaderView = styled.div`
     flex-direction: row;
     z-index: 100;
     width: 100%;
-    height: 96px;
-    padding: 10px;
+    //height: 96px;
+    padding: 0 10px 20px 0;
     justify-content: center;
     align-items: center;
     // border: 1px red solid;
@@ -195,7 +194,19 @@ const ContentView = styled.div`
     // height: 226px;
     // padding: 10px 0;
     justify-content: center;
-    // box-shadow:15px 0px 37px 13px RGBA(229, 233, 243, 1);
+    position:relative;
+    overflow:hidden;
+    padding-bottom:16px;
+    ::before {
+        content: ' ';
+        width: 100%;
+        height: 0;
+        position: absolute;
+        bottom: -4px;
+        border-bottom: 8px dotted #eee;
+        left: 4px;
+        right: 4px;
+    }
 `
 
 const ItemWrapper = styled.div`
@@ -221,18 +232,20 @@ const SeparateLine = styled.div`
 `
 
 const TitleText = styled.div`
-    color: rgba(54, 53, 53, 1);
+    color: #333;
     font-size: 14px;
 `
 
 const ContentContentText = styled.div`
-    color: rgba(51, 51, 51, 1);
+    color: #333;
     font-size: 14px;
+    font-weight:bold;
 `
 
 const HeaderContentText = styled.div`
-    color: rgba(160, 157, 157, 1);
+    color: #333;
     font-size: 14px;
+    font-weight:bold;
 `
 const ReverseButton = styled.div`
     display: flex;
@@ -250,5 +263,5 @@ const ExpandIcon = styled.div`
 `
 const ExpandIconItem = styled.div`
     height:3px;
-    border-top:1px solid #bbb;
+    border-top:1px solid #333;
 `

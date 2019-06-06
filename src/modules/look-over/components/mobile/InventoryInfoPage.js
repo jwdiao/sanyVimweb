@@ -1,7 +1,7 @@
 import React, {Component} from 'react';
 import {CommonList} from "../../../../components";
 import styled from "styled-components";
-import { SearchBar, WhiteSpace } from 'antd-mobile'
+import { SearchBar } from 'antd-mobile'
 
 class _InventoryInfoMobilePage extends Component {
     
@@ -23,14 +23,13 @@ class _InventoryInfoMobilePage extends Component {
         }
         return (
             <RootView>
-                <WhiteSpace />
                 <SearchBar 
                     className="ii-searchbar"
                     placeholder="物料" 
                     onSubmit={this.submitSearch}
                     style={{
-                        width:'93%',
-                        marginLeft:'3.5%',
+                        width:'100%',
+                        padding:'10px 5%',
                     }} 
                 />
                 <CommonList
@@ -45,6 +44,7 @@ class _InventoryInfoMobilePage extends Component {
 export const InventoryInfoPage = _InventoryInfoMobilePage;
 
 const RootView = styled.div`
-    background:#eee;
-    height: calc(100vh - 60px);
+    display: flex;
+    flex-direction: column;
+    flex:1;
 `

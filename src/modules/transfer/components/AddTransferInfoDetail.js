@@ -3,11 +3,12 @@ import { withRouter } from 'react-router-dom';
 import styled from "styled-components";
 import {
     InputItem,
-    WhiteSpace
+    WhiteSpace,
+    Toast
 } from 'antd-mobile';
-import moment from "moment/moment";
 import {
-    Button
+    Button,
+    AutoComplete,
 } from 'antd'
 import { CommonHeader, ExPicker } from "../../../components";
 import {CommonDialog} from "../../../components/CommonDialog";
@@ -27,16 +28,23 @@ class _SelectTransferItem extends Component {
 
     constructor(props) {
         super(props);
-        this.materials = this.props.location.state.materials || [];
-        this.material = this.props.location.state.material || {};
+        this.materials = this.props.location.state.materials || [];//已宣物料
+        this.selectedMatIds = this.materials.map(i => i.material.value);
+        this.material = this.props.location.state.material || {};//待编辑物料
+        this.backToParent = this.props.location.state.backToParent || {};
         this.state = {
             inInventoryQuantity:0,
-            pickerValue: [],
             reasons:[], //原因元数据
             materials:[], //物料元数据
             dataSet: {},
+            dataSource: [],//autocomplete
             result: {},
             showModal: false,
+            materiaCode: null,
+            sourcePosition: null,
+            destPosition: null,
+            units: null,
+            totalSourceNumber: -1,
         }
     }
 
@@ -44,30 +52,67 @@ class _SelectTransferItem extends Component {
         console.log('material to be edit:', this.material);
         // 初始化数据集和结果集
         if (this.material && this.material.id) {
+            const { units, value: materiaCode } = this.material.material;
+            const { value:inInventoryQuantity } = this.material.quantity;
+            const { value:sourcePosition } = this.material.sourcePosition;
+            this.setState({
+                units: units,
+            })
             let pmat = Object.assign({}, this.material);
             pmat = _.omit(pmat, ['id'])
             console.log('pmat', pmat);
             let defaultDataset = {};
-            _.keys(pmat).map(k => Object.assign(defaultDataset, {[transferItemsMap[k]]: pmat[k].label}))
+            _.keys(pmat).map(k => {
+                let val = pmat[k].label;
+                if (_.indexOf(['quantity', 'inInventoryQuantity', 'qualifiedQuantity'], k) >= 0) {
+                    val = val + ' ' + units;
+                }
+                Object.assign(defaultDataset, {[transferItemsMap[k]]: val})
+                return k;   
+            })
             console.log('defaultDataset', defaultDataset);
+            const user = Durian.get('user');
+            const supplierCode = user.vendor.value;
+            let params = { supplierCode, materiaCode };
+            console.log('warehouse number request', params);
+            const dbMatNum = await http.post('/wareHouse/getWareHouseNum', params);
+            console.log('material num', dbMatNum);
+            if (dbMatNum && dbMatNum.data) {
+                let qualifiedNumber = dbMatNum.data.qualifiedNumber;
+                let badNumber = dbMatNum.data.badNumber;
+                let totalSourceNumber = sourcePosition === 1 ? qualifiedNumber : badNumber;
+                this.setState({
+                    totalSourceNumber:totalSourceNumber,
+                    inInventoryQuantity,
+                    materiaCode,
+                });
+            }
             this.setState({
                 dataSet: defaultDataset,
-                result:this.material
+                result:this.material,
             })
         }
-        let type = 'reason';
-        const dbReasons = await http.get(`/dynamicProperty/find/type/${type}`);
-        if (dbReasons && dbReasons.data && dbReasons.data.length > 0) {
-            let reasons = dbReasons.data.filter(m => m.status === 1).map(m => {
-                return {
-                    label:m.name,
-                    value:m.code
-                }
-            }) ;
-            this.setState({
-                reasons:reasons
-            });
-        }
+        // let type = 'reason';
+        // const dbReasons = await http.get(`/dynamicProperty/find/type/${type}`);
+        // if (dbReasons && dbReasons.data && dbReasons.data.length > 0) {
+        //     let reasons = dbReasons.data.filter(m => m.status === 1).map(m => {
+        //         return {
+        //             label:m.name,
+        //             value:m.code
+        //         }
+        //     }) ;
+        //     this.setState({
+        //         reasons:reasons
+        //     });
+        // }
+        this.setState({
+            reasons:[
+                {
+                    label: '质量问题',
+                    value: 'C001',
+                },
+            ]
+        });
         const user = Durian.get('user');
         const supplierCode = user.vendor.value;
         let params = { supplierCode: supplierCode };
@@ -75,32 +120,120 @@ class _SelectTransferItem extends Component {
         if (dbMat && dbMat.data && dbMat.data.content) {
             let materials = dbMat.data.content.map(i => {
               return {
-                label: i.materialName,
-                value: i.materialCode
+                label: `${i.materialCode}-${i.materialName}`,
+                value: i.materialCode,
+                units: i.units,
               }
             });
-            this.setState({
-                materials: materials
-            })
+             //根据传入的已选materials过滤掉基础物料中的值
+             console.log('selectedMatIds', this.selectedMatIds);
+             console.log('this.material', this.material);
+             let ds = materials.filter(i => _.indexOf(this.selectedMatIds, i.value) === -1)
+                                     .map(i=>i.label);
+             if (this.material.material) {
+                 ds.splice(0, 0, this.material.material.label);
+             }
+             console.log('filtered auto complete data source', ds);
+             this.setState({
+                 materials: materials,
+                 dataSource: ds,
+             })
         }
     }
 
-    onPickerOk = (kv, type) => {
+    onPickerOk = async (kv, type) => {
         console.log(`value from children ${kv.label} ${type}`);
+        
         this.setState((prevState) => {
             return {
-                pickerValue: [kv.value],
                 dataSet: Object.assign({},prevState.dataSet, {[transferItemsMap[type]]:kv.label}), 
                 result: Object.assign({},prevState.result, {[type]:kv})
             }
         });
+        // if (type === 'material') {
+        //     const materiaCode = kv.value;
+        //     this.setState({
+        //         units: kv.units,
+        //         materiaCode,
+        //     }, () => this.tryFetchMatTotalNumber(materiaCode, null))
+           
+        // }
+       
+        if (type === 'sourcePosition' || type === 'destPosition') {
+            let akval = kv.value===1?[2]:[1];
+            console.log('akval', akval);
+            let atype = type === 'sourcePosition'?'destPosition':'sourcePosition';
+            let val = type === 'sourcePosition'?kv.value:akval[0];
+            let akv = this.fromVal(reservoirLibraryList, akval);
+            console.log('akv', akv);
+            this.setState((prevState) => {
+                return {
+                    dataSet: Object.assign({},prevState.dataSet, {[transferItemsMap[atype]]:akv.label}), 
+                    result: Object.assign({},prevState.result, {[atype]:akv}),
+                    [type]: kv.value,
+                    [atype]: akval[0],
+                }
+            }, () => this.tryFetchMatTotalNumber(null, val));
+        }
     };
 
+    tryFetchMatTotalNumber = async (materiaCode, sourcePosition) => {
+        if (materiaCode === null) {//优先使用传入值，避免state更新延迟
+            materiaCode = this.state.materiaCode
+        }
+        if (sourcePosition === null) {//优先使用传入值，避免state更新延迟
+            sourcePosition = this.state.sourcePosition
+        }
+        if (materiaCode === null || sourcePosition === null) {
+            return false;
+        }
+        const user = Durian.get('user');
+        const supplierCode = user.vendor.value;
+        let params = { supplierCode, materiaCode };
+        console.log('warehouse number request', params);
+        const dbMatNum = await http.post('/wareHouse/getWareHouseNum', params);
+        console.log('material num', dbMatNum);
+        let totalSourceNumber = 0;
+        if (dbMatNum && dbMatNum.data) {
+            let qualifiedNumber = dbMatNum.data.qualifiedNumber;
+            let badNumber = dbMatNum.data.badNumber;
+            totalSourceNumber = sourcePosition === 1 ? qualifiedNumber : badNumber;
+        }
+        this.setState({
+            totalSourceNumber:totalSourceNumber,
+        });
+    }
     onVendorSubmit = () => {
-        let vendor = this.state.pickerValue;
-        //submit vendor value
-        console.log(`selected vendor is ${vendor}`);
-        //route to main page
+        let {inInventoryQuantity, totalQualifiedNumber, result } = this.state;
+        let materialValue = _.get(result, 'material.value') || '';
+        let quantityValue = _.get(result, 'quantity.value') || '';
+        let sourcePositionValue = _.get(result, 'sourcePosition.value') || '';
+        let destPositionValue = _.get(result, 'destPosition.value') || '';
+        let reasonValue = _.get(result, 'reason.value') || '';
+        if (materialValue === ''
+            || quantityValue === ''
+            || sourcePositionValue === ''
+            || destPositionValue === ''
+            || reasonValue === ''
+            || inInventoryQuantity === null
+        ) {
+            Toast.fail('请输入所有必要信息！', 1);
+            return false;
+        }
+        if (+inInventoryQuantity <=0) {
+            Toast.fail('输入数量必须大于0！', 2);
+            this.setState({
+                inInventoryQuantity: null
+            })
+            return false;
+        }
+        if (+totalQualifiedNumber >=0 && totalQualifiedNumber < inInventoryQuantity) {
+            Toast.fail('输入数量不能大于库存数量！', 2);
+            this.setState({
+                inInventoryQuantity: null
+            })
+            return false;
+        }
         this.setState({
             showModal: true
         })
@@ -113,12 +246,18 @@ class _SelectTransferItem extends Component {
     }
 
     onBtn2Clicked = () => {
+        console.log('this.state.result', this.state.result);
         this.material.id && _.remove(this.materials, m => m.id.value === this.material.id.value);
-        this.materials.push(Object.assign({}, this.state.result, /* {inInventoryTime:moment().format('YYYY-MM-DD HH:mm:ss')} */));
+        // this.materials.push(Object.assign({}, this.state.result, /* {inInventoryTime:moment().format('YYYY-MM-DD HH:mm:ss')} */));
+        this.materials.splice(0, 0, this.state.result);
         this.setState({
             showModal: false
         }, ()=>{
-            this.props.history.replace('/main/add-transfer', {materials:this.materials});
+            let params = {materials:this.materials};
+            if (this.backToParent) {
+                params.backToParent = this.backToParent;
+            }
+            this.props.history.replace('/main/add-transfer', params);
         })
     }
 
@@ -132,15 +271,88 @@ class _SelectTransferItem extends Component {
         return _.find(list, i => i.value === val[0]);
     }
 
-    render() {
-        const{dataSet, showModal, inInventoryQuantity} = this.state
-        const errorStateInInventory = (inInventoryQuantity <=0) // 为true时 表示有error
+     // AutoComplete组件监听
+     handleSearch = async value => {
+        const { materials } = this.state;
+        
+        if (materials.length>0) {
+             //根据传入的已选materials过滤掉基础物料中的值
+             console.log('selectedMatIds', this.selectedMatIds);
+             console.log('this.material', this.material);
+             let ds = materials.filter(i => _.indexOf(this.selectedMatIds, i.value) === -1)
+                                     .map(i=>i.label);
+             if (this.material.material) {
+                 ds.splice(0, 0, this.material.material.label);
+             }
+            this.setState({
+                dataSource: ds.filter(i=>i.indexOf(value) > -1),
+            })
+        } else {
+            this.setState({
+                dataSource: []
+            })
+        }
+    }
+    selectMaterial = async (value, option) => {
+        console.log('selected value and option', value, option);
 
+        const { materials } = this.state;
+
+        let selectedMat = _.split(value, '-');
+        const materiaCode = selectedMat[0];
+
+        const currMat = _.find(materials, i => i.value === materiaCode);
+        this.setState((prevState) => {
+            return {
+                dataSet: Object.assign({},prevState.dataSet, {[transferItemsMap['material']]:value}), 
+                result: Object.assign({},prevState.result, {'material':currMat})
+            }
+        });
+        
+        const { units } = currMat;
+
+        const user = Durian.get('user');
+        const supplierCode = user.vendor.value;
+        let params = { supplierCode, materiaCode };
+        console.log('warehouse number request', params);
+        const dbMatNum = await http.post('/wareHouse/getWareHouseNum', params);
+        console.log('material num', dbMatNum);
+        let totalQualifiedNumber = 0;
+        if (dbMatNum && dbMatNum.data) {
+            totalQualifiedNumber = dbMatNum.data.qualifiedNumber;
+           
+        }
+        this.setState({
+            units, 
+            totalQualifiedNumber,
+            materiaCode,
+        }, () => this.tryFetchMatTotalNumber(materiaCode, null));
+    }
+    render() {
+        const{dataSet, showModal, inInventoryQuantity, totalSourceNumber, sourcePosition, destPosition} = this.state
+        console.log('sourcePosition', sourcePosition);
+        console.log('destPosition', destPosition);
+        let errorStateInInventory = false;
+        if (inInventoryQuantity && +inInventoryQuantity <=0) {
+            errorStateInInventory = true;
+            Toast.fail('输入数量必须大于0！', 2);
+            this.setState({
+                inInventoryQuantity: null
+            })
+        }
+
+        if (+totalSourceNumber >=0 && totalSourceNumber < inInventoryQuantity) {
+            errorStateInInventory = true;
+            Toast.fail('输入数量不能大于库存数量！', 2);
+            this.setState({
+                inInventoryQuantity: null
+            })
+        }
         return (
             <RootView>
                 <CommonHeader navBarTitle="选择移库信息" showBackButton={true} />
                 <WhiteSpace size='lg' />
-                <ExPicker
+                {/* <ExPicker
                     data={this.state.materials}
                     selectedFirst={false}
                     val={this.material.material ? this.material.material.value:''}
@@ -163,51 +375,21 @@ class _SelectTransferItem extends Component {
                     extraStyle={{
                         color: '#303030'
                     }}
-                />
-                {/* <ExPicker
-                    data={materialDescriptionMap}
-                    selectedFirst={true}
-                    cols={1}
-                    onOk={(val)=>this.onPickerOk(val, '描述')}
-                    pickerStyle={{
-                        borderBottom:'1px solid #eee',
-                    }}
-                    title="描述"
-                    titleStyle={{
-                        fontWeight: 'bold',
-                        fontSize: '1rem',
-                        color: '#303030'
-                    }}
-                    titleIcon="&#xe66b;"
-                    titleIconStyle={{
-                        color: '#09B6FD',
-                        fontSize: '1.6rem'
-                    }}
-                    extraStyle={{
-                        color: '#303030'
-                    }}
                 /> */}
                 <ItemView>
-                    <ContentTitleText>数量</ContentTitleText>
-                    <InputNumber
-                        className={'input-style'}
-                        placeholder="请输入数字"
-                        type="money"
-                        defaultValue={this.material.quantity ? this.material.quantity.value:''.value}
-                        onChange={(v)=>{
-                            this.setState((prevState) => {
-                                return {
-                                    inInventoryQuantity: v,
-                                    dataSet: Object.assign({},prevState.dataSet, {[transferItemsMap.quantity]:v}),
-                                    result: Object.assign({},prevState.result, {quantity:{label:v, value:v}})
-                                }
-                            });
+                    <ContentTitleText>物料</ContentTitleText>
+                    <AutoComplete
+                        className="common-auto-complete"
+                        allowClear={true}
+                        dataSource={this.state.dataSource}
+                        defaultValue={this.material.material ? this.material.material.label:''}
+                        placeholder="请输入物料信息"
+                        style={{
+                            width: '80%',
+                        marginRight:'5px',
                         }}
-                        clear={false}
-                        onBlur={(v) => { console.log('onBlur', v); }}
-                        // moneyKeyboardAlign="right"
-                        moneyKeyboardWrapProps={moneyKeyboardWrapProps}
-                        error={errorStateInInventory}
+                        onSearch={this.handleSearch}
+                        onSelect={this.selectMaterial}
                     />
                 </ItemView>
                 <SeparateLine />
@@ -215,6 +397,7 @@ class _SelectTransferItem extends Component {
                     data={reservoirLibraryList}
                     selectedFirst={false}
                     val={this.material.sourcePosition ? this.material.sourcePosition.value:''}
+                    linkage={sourcePosition}
                     cols={1}
                     onOk={(val)=>this.onPickerOk(this.fromVal(reservoirLibraryList, val), 'sourcePosition')}
                     pickerStyle={{
@@ -239,6 +422,7 @@ class _SelectTransferItem extends Component {
                     data={reservoirLibraryList}
                     selectedFirst={false}
                     val={this.material.destPosition ? this.material.destPosition.value:''}
+                    linkage={destPosition}
                     cols={1}
                     onOk={(val)=>this.onPickerOk(this.fromVal(reservoirLibraryList, val), 'destPosition')}
                     pickerStyle={{
@@ -259,6 +443,39 @@ class _SelectTransferItem extends Component {
                         color: '#303030'
                     }}
                 />
+                <ItemView>
+                    <ContentTitleText>数量{totalSourceNumber>=0?(<WarehouseNum>（剩余库存为{totalSourceNumber}）</WarehouseNum>):''}</ContentTitleText>
+                    <ItemInputView>
+                        <InputNumber
+                            className={'input-style'}
+                            placeholder="请输入数字"
+                            type="money"
+                            value={this.state.inInventoryQuantity>0?this.state.inInventoryQuantity:null}
+                            defaultValue={this.material.quantity ? this.material.quantity.value:''.value}
+                            onChange={(v)=>{
+                                if (totalSourceNumber === -1) {
+                                    Toast.fail('请先选择物料及库位！', 2);
+                                    return false;
+                                }
+                                this.setState((prevState) => {
+                                    return {
+                                        inInventoryQuantity: v,
+                                        dataSet: Object.assign({},prevState.dataSet, {[transferItemsMap.quantity]:`${v} ${this.state.units}`}),
+                                        result: Object.assign({},prevState.result, {quantity:{label:v, value:v}})
+                                    }
+                                });
+                            }}
+                            clear={false}
+                            onBlur={(v) => { console.log('onBlur', v); }}
+                            // moneyKeyboardAlign="right"
+                            moneyKeyboardWrapProps={moneyKeyboardWrapProps}
+                            error={errorStateInInventory}
+                        />
+                     {this.state.units}
+                    </ItemInputView>
+                </ItemView>
+                <SeparateLine />
+                
                 <ExPicker
                     data={this.state.reasons}
                     selectedFirst={false}
@@ -308,7 +525,7 @@ const LoginBtn = styled(Button)`
     width:64%;margin:0 auto;
     height:40px;
     background:linear-gradient(90deg,rgba(9,182,253,1),rgba(96,120,234,1));
-    margin-top:300px;
+    margin-top:200px;
     border-radius:40px;
     color:#fff;
     font-size: 15px;
@@ -328,6 +545,13 @@ const ItemView = styled.div`
     color: #303030;
     font-size: 1rem; 
 `
+const ItemInputView = styled.div`
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: right;
+    padding-right:5px;
+`
 const SeparateLine = styled.div`
     display: flex;
     width: 100%;
@@ -344,6 +568,10 @@ const InputNumber = styled(InputItem)`
     &.am-list-line {
     padding-right: 0 !important;
   }
+`
+const WarehouseNum = styled.span`
+    font-size: 10px;
+    color:#999;
 `
 
 

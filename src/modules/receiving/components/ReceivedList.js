@@ -17,6 +17,7 @@ class _ReceivedList extends Component {
 export const ReceivedList = _ReceivedList
 
 const RootView = styled.div`
-    background:#eee;
-    height: calc(100vh - 60px);
+    display:flex;
+    flex:1;
+    flex-direction: column;
 `

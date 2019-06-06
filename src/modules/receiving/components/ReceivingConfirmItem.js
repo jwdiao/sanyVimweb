@@ -1,7 +1,7 @@
 import React, {Component} from 'react';
 import styled from "styled-components";
 import {InputItem, Toast} from 'antd-mobile'
-import {receivedItemsMap} from "../../../utils";
+import {receivedMaterialMap} from "../../../utils";
 
 const _ = require('lodash')
 
@@ -14,24 +14,30 @@ if (isIPhone) {
 }
 
 class _ReceivingConfirmItem extends Component {
-    state = {
-        inInventoryQuantity: 0,
-        qualifiedQuantity: 0
+
+    constructor(props) {
+        super(props);
+        const { quantity } = this.props.data
+        this.state = {
+            inInventoryQuantity: quantity,
+            qualifiedQuantity: quantity
+        }
     }
+    
 
     render() {
-        const {data, indicatorBarColor, onReceivingButtonClicked} = this.props
-        const {id, quantity,status} = data
+        const {data, indicatorBarColor, onReceivingButtonClicked, sinkData} = this.props
+        console.log('receiving confirm item data', data);
+        const {id, quantity,status, units} = data
 
         let keys = _.keys(data)
         let index = keys.findIndex(key => key === 'id')
         keys.splice(index,1)
-        _.remove(keys, i => i === 'status');
+        _.remove(keys, i => i === 'status' || i === 'units');
         status === 1 && _.remove(keys, i => _.indexOf(['inInventoryQuantity', 'qualifiedQuantity'], i) !== -1);
 
         const {inInventoryQuantity, qualifiedQuantity} = this.state
 
-        // console.log('this.state', this.state, 'quantity', quantity)
         let errorStateInInventory = false, errorStateQualified = false;
         if (+inInventoryQuantity) {
             if (+inInventoryQuantity <= 0) {
@@ -55,43 +61,44 @@ class _ReceivingConfirmItem extends Component {
                 errorStateQualified = true;
             }
         }
-        // if (inInventoryQuantity && qualifiedQuantity && quantity) {
-        //     errorStateInInventory = (+inInventoryQuantity > +quantity) || (+qualifiedQuantity > +inInventoryQuantity) || (+inInventoryQuantity <= 0) // 为true时 表示有error
-        //     errorStateQualified = (+qualifiedQuantity > +quantity) || (+qualifiedQuantity > +inInventoryQuantity) || (+qualifiedQuantity <= 0) // 为true时 表示有error
-        // }
+        
         console.log('error:', errorStateInInventory, errorStateQualified);
-        // console.log('error state result, errorStateInInventory, errorStateQualified,', errorStateInInventory, errorStateQualified, !errorStateInInventory && !errorStateQualified)
         return (
             <RootView>
                 <IndicatorLeftBar color={indicatorBarColor}/>
                 <ContentView>
                     <ReverseButton
-                        isEnabled={inInventoryQuantity && qualifiedQuantity && !errorStateInInventory && !errorStateQualified}
+                        isEnabled={status===1 && inInventoryQuantity && qualifiedQuantity && !errorStateInInventory && !errorStateQualified}
                         onClick={() => {
-                            if (inInventoryQuantity && qualifiedQuantity && !errorStateInInventory && !errorStateQualified) {
-                                console.log('Enabled: ReverseButton clicked! data =  ', data)
-                                onReceivingButtonClicked(data, inInventoryQuantity, qualifiedQuantity)
-                            } else {
-                                if (+qualifiedQuantity > +inInventoryQuantity) {
-                                    Toast.fail('合格数量不能大于入库数量！', 3);
+                            if (status === 1) {
+                                if (inInventoryQuantity && qualifiedQuantity && !errorStateInInventory && !errorStateQualified) {
+                                    console.log('Enabled: ReverseButton clicked! data =  ', data)
+                                    onReceivingButtonClicked(data, inInventoryQuantity, qualifiedQuantity)
                                 } else {
-                                    Toast.fail('请输入正确的数值！', 1);
+                                    if (+qualifiedQuantity > +inInventoryQuantity) {
+                                        Toast.fail('合格数量不能大于入库数量！', 3);
+                                    } else {
+                                        Toast.fail('请输入正确的数值！', 1);
+                                    }
+                                    console.log('Disabled: ReverseButton clicked! data id = ', id)
                                 }
-                                console.log('Disabled: ReverseButton clicked! data id = ', id)
                             }
                         }}
                     >
                         {status === 1 ? '收货' : '已收货'}
                     </ReverseButton>
                     {
-                        keys.slice(1, keys.length).map((_key, index) => {
-                            // console.log('_key, index', _key, index)
+                        keys.map((_key, index) => {
+                            let val = data[_key];
+                            if (_.indexOf(['quantity', 'inInventoryQuantity', 'qualifiedQuantity'], _key) >= 0) {
+                                val = val + ' ' + units;
+                            }
                             return (
                                 <ItemWrapper
                                     key={_key}>
                                     <ItemView>
-                                        <ContentTitleText>{receivedItemsMap[_key]}</ContentTitleText>
-                                        <ContentContentText>{data[_key]}</ContentContentText>
+                                        <ContentTitleText>{receivedMaterialMap[_key]}</ContentTitleText>
+                                        <ContentContentText>{val}</ContentContentText>
                                     </ItemView>
                                     <SeparateLine/>
                                 </ItemWrapper>
@@ -102,25 +109,33 @@ class _ReceivingConfirmItem extends Component {
                         <ItemWrapper>
                             <ItemView>
                                 <ContentTitleText>入库数量</ContentTitleText>
-                                <InputNumber
-                                    className={'input-style'}
-                                    placeholder="请输入数字"
-                                    type="money"
-                                    onChange={(v) => {
-                                        this.setState({
-                                            inInventoryQuantity: v,
-                                        })
-                                    }}
-                                    clear={false}
-                                    onBlur={(v) => {
-                                        this.setState({
-                                            inInventoryQuantity: v,
-                                        })
-                                    }}
-                                    // moneyKeyboardAlign="right"
-                                    moneyKeyboardWrapProps={moneyKeyboardWrapProps}
-                                    error={errorStateInInventory}
-                                />
+                                <ItemInputView>
+                                    <InputNumber
+                                        className={'input-style'}
+                                        placeholder="请输入数字"
+                                        type="money"
+                                        defaultValue={quantity}
+                                        onChange={(v) => {
+                                            this.setState({
+                                                inInventoryQuantity: v,
+                                            })
+                                        }}
+                                        clear={false}
+                                        onBlur={(v) => {
+                                            this.setState({
+                                                inInventoryQuantity: v,
+                                            })
+                                            sinkData({
+                                                id, 
+                                                totalNumber:v,
+                                                qualifiedNumber: this.state.qualifiedQuantity,
+                                            });
+                                        }}
+                                        // moneyKeyboardAlign="right"
+                                        moneyKeyboardWrapProps={moneyKeyboardWrapProps}
+                                        error={errorStateInInventory}
+                                    />{units}
+                                    </ItemInputView>
                             </ItemView>
                         </ItemWrapper> : null}
                     {status === 1 ?
@@ -128,10 +143,12 @@ class _ReceivingConfirmItem extends Component {
                             <SeparateLine/>
                             <ItemView>
                                 <ContentTitleText>合格数量</ContentTitleText>
+                                <ItemInputView>
                                 <InputNumber
                                     className={'input-style'}
                                     placeholder="请输入数字"
                                     type="money"
+                                    defaultValue={quantity}
                                     onChange={(v) => {
                                         this.setState({
                                             qualifiedQuantity: v,
@@ -142,11 +159,16 @@ class _ReceivingConfirmItem extends Component {
                                         this.setState({
                                             qualifiedQuantity: v,
                                         })
+                                        sinkData({
+                                            id, 
+                                            totalNumber:this.state.inInventoryQuantity,
+                                            qualifiedNumber: v,
+                                        });
                                     }}
                                     // moneyKeyboardAlign="right"
                                     moneyKeyboardWrapProps={moneyKeyboardWrapProps}
                                     error={errorStateQualified}
-                                />
+                                />{units}</ItemInputView>
                             </ItemView>
                         </ItemWrapper> : null}
                 </ContentView>
@@ -204,6 +226,12 @@ const ItemView = styled.div`
     justify-content: space-between;
     align-items: center;
 `
+const ItemInputView = styled.div`
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: right;
+`
 
 const SeparateLine = styled.div`
     display: flex;
@@ -211,11 +239,11 @@ const SeparateLine = styled.div`
     border: rgba(216, 215, 215, 1) dashed 0.5px;
 `
 const ContentTitleText = styled.div`
-    color: rgba(154, 152, 152, 1);
+    color: #333;
     font-size: 14px;
 `
 const ContentContentText = styled.div`
-    color: rgba(154, 152, 152, 1);
+    color: #333;
     font-size: 14px;
 `
 const ReverseButton = styled.div`

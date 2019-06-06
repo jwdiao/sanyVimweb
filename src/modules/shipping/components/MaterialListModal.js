@@ -7,20 +7,18 @@ import {
     Modal,
     Input,
     Table,
-    Button,
-    Popconfirm,
     Form, Select, InputNumber,
 } from 'antd';
 import styled from "styled-components";
 import freshId from "fresh-id";
-import {http, materialDescriptionMap, materialTypeMap, vendorList} from "../../../utils";
+import {formatDate, http} from "../../../utils";
 
 const _ = require('lodash')
 const modalTitleMap = {
     'to_be_shipped_infos': '待发货订单物料列表',
     'shipped_infos': '工厂发货订单物料列表',
     'reversed_infos': '已冲销发货订单物料列表',
-    'vmi_received_infos': 'VMI收货订单物料列表',
+    'vmi_received_infos': '收货信息物料列表',
     'reversed_infos_query': '冲销信息物料列表',
 }
 
@@ -67,13 +65,13 @@ class EditableCell extends React.Component {
             let options = []
             switch (columnId) {
                 case 'vendorName':
-                    options = vendorList
+                    options = []
                     break
                 case 'material':
-                    options = materialTypeMap
+                    options = []
                     break
                 case 'description':
-                    options = materialDescriptionMap
+                    options = []
                     break
                 default:
                     break
@@ -158,7 +156,7 @@ class EditableCell extends React.Component {
 class EditableTable extends React.Component {
     constructor(props) {
         super(props);
-        const {modalType}=props
+        const {modalType} = props
         this.state = {
             columns: this.constructTableColumns(modalType === 'vmi_received_infos'),
             dataSource: [],
@@ -170,15 +168,20 @@ class EditableTable extends React.Component {
         if (_.isEmpty(order)) return
         let oData = await this.getMaterialList(order)
         this.setState({
-            dataSource: oData.map(material => {
+            dataSource: oData.map((material, index) => {
                 return {
+                    key: freshId(),
+                    rowIndex: index +1,
                     material: material.materiaCode,
-                    materialDescription: 'Todo:物料描述',
+                    materialDescription: material.materiaName,
                     materialQuantity: material.materiaNum,
+                    unit: material.units,
                     totalNumber: material.totalNumber,
                     qualifiedQuantity: material.qualifiedNumber,
                     unqualifiedQuantity: material.badNumber,
                     state: material.status,
+                    receivedTime: formatDate(material.receiveTime),
+                    receiver: material.receiveName,
                 }
             })
         })
@@ -190,23 +193,27 @@ class EditableTable extends React.Component {
 
         let oData = await this.getMaterialList(order)
         this.setState({
-            dataSource: oData.map(material => {
+            dataSource: oData.map((material, index) => {
                 return {
                     key: freshId(),
-                    material: material.materiaCode,// 物料（也就是物料ID）
-                    materialDescription: 'Todo:物料描述',// Todo:物料描述，需要接口增加
+                    rowIndex: index +1,
+                    material: material.materiaCode,// 物料编码（也就是物料ID）
+                    materialDescription: material.materiaName,// 物料描述
                     materialQuantity: material.materiaNum,// 物料数量
+                    unit: material.units,// 物料单位
                     totalNumber: material.totalNumber,// 收货时数量
                     qualifiedQuantity: material.qualifiedNumber,// 合格数量
                     unqualifiedQuantity: material.badNumber,// 不合格数量
                     state: material.status,// 状态
+                    receivedTime: formatDate(material.receiveTime), // 收货时间
+                    receiver: material.receiveName,// 收货人
                 }
             })
         })
     }
 
     getMaterialList = async (order) => {
-        let orderId = order.number ? order.number : order.generatedNumber // TODO：对于报表管理-冲销信息查询，没有number这个字段，使用生成号码来查询，但是查不出来
+        let orderId = order.number
         let result = await http.get(
             `/orderMaterial/find/ordercode/${orderId}`,
         )
@@ -220,67 +227,99 @@ class EditableTable extends React.Component {
 
     constructTableColumns = (shouldDisplayRestColumns) => {
         if (shouldDisplayRestColumns) {
-            return [{
-                title: '物料',
-                dataIndex: 'material',
-                width: '17%',
-                editable: false,
-            }, {
-                title: '物料描述',
-                dataIndex: 'materialDescription',
-                width: '20%',
-                editable: false,
-            }, {
-                title: '物料数量',
-                dataIndex: 'materialQuantity',
-                width: '12%',
-                editable: false,
-            }, {
-                title: '收货时总数',
-                dataIndex: 'totalNumber',
-                width: '17%',
-                editable: false,
-            }, {
-                title: '合格品数量',
-                dataIndex: 'qualifiedQuantity',
-                width: '17%',
-                editable: false,
-            }, {
-                title: '不合格品数量',
-                dataIndex: 'unqualifiedQuantity',
-                width: '17%',
-                editable: false,
-            }
-            // , {
-            //     title: '状态',
-            //     dataIndex: 'state',
-            //     width: '15%',
-            //     editable: false,
-            // }
+            return [
+                {
+                    title: '序号',
+                    dataIndex: 'rowIndex',
+                    width: '5%',
+                    editable: false,
+                }, {
+                    title: '物料编码',
+                    dataIndex: 'material',
+                    width: '15%',
+                    editable: false,
+                }, {
+                    title: '物料描述',
+                    dataIndex: 'materialDescription',
+                    width: '15%',
+                    editable: false,
+                }, {
+                    title: '单位',
+                    dataIndex: 'unit',
+                    width: '5%',
+                    editable: false,
+                }, {
+                    title: '发货数量',
+                    dataIndex: 'materialQuantity',
+                    width: '8%',
+                    editable: false,
+                }, {
+                    title: '收货数量',
+                    dataIndex: 'totalNumber',
+                    width: '8%',
+                    editable: false,
+                }, {
+                    title: '合格数量',
+                    dataIndex: 'qualifiedQuantity',
+                    width: '8%',
+                    editable: false,
+                }, {
+                    title: '不合格数量',
+                    dataIndex: 'unqualifiedQuantity',
+                    width: '8%',
+                    editable: false,
+                }, {
+                    title: '收货时间',
+                    dataIndex: 'receivedTime',
+                    width: '15%',
+                    editable: false,
+                }, {
+                    title: '收货人',
+                    dataIndex: 'receiver',
+                    width: '18%',
+                    editable: false,
+                }
+                // , {
+                //     title: '状态',
+                //     dataIndex: 'state',
+                //     width: '15%',
+                //     editable: false,
+                // }
             ]
         } else {
-            return [{
-                title: '物料',
-                dataIndex: 'material',
-                width: '15%',
-                editable: false,
-            }, {
-                title: '物料描述',
-                dataIndex: 'materialDescription',
-                width: '20%',
-                editable: false,
-            }, {
-                title: '物料数量',
-                dataIndex: 'materialQuantity',
-                width: '15%',
-                editable: false,
-            }
-            // , {
-            //     title: '状态',
-            //     dataIndex: 'state',
-            //     width: '15%',
-            //     editable: false,
-            // }
+            return [
+                {
+                    title: '序号',
+                    dataIndex: 'rowIndex',
+                    width: '10%',
+                    editable: false,
+                }, {
+                    title: '物料编码',
+                    dataIndex: 'material',
+                    width: '30%',
+                    editable: false,
+                }, {
+                    title: '物料描述',
+                    dataIndex: 'materialDescription',
+                    width: '30%',
+                    editable: false,
+                }, {
+                    title: '单位',
+                    dataIndex: 'unit',
+                    width: '15%',
+                    editable: false,
+                }, {
+                    title: '物料数量',
+                    dataIndex: 'materialQuantity',
+                    width: '15%',
+                    editable: false,
+                }
+                // , {
+                //     title: '状态',
+                //     dataIndex: 'state',
+                //     width: '15%',
+                //     editable: false,
+                // }
             ]
         }
     }
@@ -339,12 +378,12 @@ class EditableTable extends React.Component {
                         marginBottom: '10px',
                         alignSelf: 'flex-start'
                     }}
-                >{`订单号：${order.number}`}</div>
+                >{`系统ID：${order.number}`}</div>
                 <Table
                     className="data-board-mini-table"
                     components={components}
                     rowClassName={() => 'editable-row'}
-                    bordered
+                    bordered={false}
                     dataSource={dataSource}
                     columns={columns}
                     pagination={false}
@@ -402,7 +441,7 @@ class _MaterialListModal extends Component {
                     confirmLoading={confirmLoading}
                     onCancel={this.handleCancel}
                     destroyOnClose={true}
-                    width={modalType === 'vmi_received_infos'?'60%':'40%'}
+                    width={modalType === 'vmi_received_infos' ? '80%' : '60%'}
                     bodyStyle={{width: '100%'}}
                 >
                     <EditableTable
@@ -425,5 +464,5 @@ const InputContainerView = styled.div`
   width: 100%;
   height: 100%;
   padding: 10px 10px;
-  // border: #5a8cff 2px solid;
+  // border: #48b2f7 2px solid;
 `

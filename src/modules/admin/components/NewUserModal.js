@@ -8,7 +8,7 @@ import {
     Form,
     Select, message
 } from 'antd';
-import {roleList, http} from "../../../utils";
+import {roleList, http, isEmpty, Encrypt} from "../../../utils";
 
 const {Option} = Select;
 
@@ -44,7 +44,7 @@ class _NewUserModal extends Component {
 
     async componentDidMount() {
         this.props.form.validateFields();
-        const result = await http.post('/supplier/supplierList',{})
+        const result = await http.post('/supplier/supplierList',{status:1})
         if (result.ret === '200') {
             this.setState({
                 _vendorList: result.data.content.map(item => ({key: `vendor_${item.code}`, value: item.code, label: item.name}))
@@ -72,12 +72,13 @@ class _NewUserModal extends Component {
                 // 网络请求
                 console.log('values', values)
                 const {userName,name,mobile,password,role} = values
+                console.log('encrypt', Encrypt.encryptBy3DES(password).toString())
                 let params = {
                     status:1, // 默认启用状态
-                    userName:userName,// 用户名
-                    name:name,// 姓名
-                    phone:mobile,// 电话
-                    password:password,// 密码
+                    userName:userName.trim(),// 用户名
+                    name:name.trim(),// 姓名
+                    phone:mobile.trim(),// 电话
+                    password:Encrypt.encryptBy3DES(password).toString(),// 密码
                     type:role,// 角色
                 }
 
@@ -112,7 +113,7 @@ class _NewUserModal extends Component {
                     requestMethod:'POST'
                 })
 
-                if (!!result) {
+                if (result.ret === '200') {
                     const addedData = {
                         // key: freshId(),
                         // // id: content.id,
@@ -124,6 +125,7 @@ class _NewUserModal extends Component {
                     if (this.props.onOkClickedListener) {
                         this.props.onOkClickedListener(this.props.modalType, addedData)
                     }
+                    message.success('操作成功！')
                 } else {
                     message.error('数据提交失败！请稍候重试。')
                 }
@@ -138,7 +140,6 @@ class _NewUserModal extends Component {
     }
 
     nameUniqueValidator = async (rule, value, callback, source, options) => {
-        let errors = [];
         const result = await this.callNetworkRequest({
             requestUrl:'/user/validateUser',
             params:{
@@ -146,7 +147,8 @@ class _NewUserModal extends Component {
             },
             requestMethod:'POST',
         })
-        if (!isEmpty(value) && !result){
+        console.log('nameUniqueValidator', result)
+        if (!isEmpty(value) && result.ret === '208'){
             callback('用户名已被使用！')
         }
         callback()
@@ -172,7 +174,7 @@ class _NewUserModal extends Component {
             result = await http.get(requestUrl)
         }
         console.log('request:',requestUrl,'params:',params,'result:',result)
-        return result && result.ret === '200'
+        return result
     }
 
     render() {
@@ -210,10 +212,14 @@ class _NewUserModal extends Component {
                             {getFieldDecorator('userName', {
                                 rules: [
                                     {required: true, message: '请输入您的用户名!'},
+                                    {pattern: /^[^\s]*$/, message: '用户名不允许输入空格!'},
                                     {validator: this.nameUniqueValidator}
                                 ],
+                                initialValue:'',
                             })(
-                                <Input placeholder="请输入用户名"/>
+                                <Input
+                                    placeholder="请输入用户名"
+                                />
                             )}
                         </Form.Item>
 
@@ -223,7 +229,11 @@ class _NewUserModal extends Component {
                             help={nameError || ''}
                         >
                             {getFieldDecorator('name', {
-                                rules: [{required: true, message: '请输入您的姓名!'}],
+                                rules: [
+                                    {required: true, message: '请输入您的姓名!'},
+                                    {pattern: /^[^\s]*$/, message: '姓名不允许输入空格!'}
+                                    ],
+                                initialValue:'',
                             })(
                                 <Input
                                     placeholder="请输入姓名"/>
@@ -238,9 +248,11 @@ class _NewUserModal extends Component {
                             {getFieldDecorator('mobile', {
                                 rules: [
                                     {required: true, message: '请输入手机号!'},
+                                    {pattern: /^[^\s]*$/, message: '手机号码不允许输入空格!'},
                                     {max: 11, message: '手机号位数不正确!'},
                                     {validator: this.mobileValidValidator}
                                 ],
+                                initialValue:'',
                             })(
                                 <Input
                                     placeholder="请输入手机号"
@@ -256,7 +268,11 @@ class _NewUserModal extends Component {
                             help={passwordError || ''}
                         >
                             {getFieldDecorator('password', {
-                                rules: [{required: true, message: '请输入密码!'}],
+                                rules: [
+                                    {required: true, message: '请输入密码!'},
+                                    {pattern: /^[^\s]*$/, message: '密码为数字与字母(区分大小写)组合，不允许包含空格!'}
+                                    ],
+                                initialValue:'',
                             })(
                                 <Input
                                     placeholder="请输入密码"
@@ -334,10 +350,6 @@ class _NewUserModal extends Component {
             </div>
         );
     }
-}
-
-function isEmpty(testString) {
-    return !testString || testString.length === 0 || testString === ''
 }
 
 export const NewUserModal = Form.create()(_NewUserModal);

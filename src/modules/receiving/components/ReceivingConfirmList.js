@@ -1,10 +1,9 @@
 import React, { Component } from 'react'
 import ReactDOM from 'react-dom'
 import styled from "styled-components";
-import freshId from 'fresh-id'
 
 import {PullToRefresh, ListView, Modal} from 'antd-mobile';
-import { Checkbox } from 'antd';
+// import { Checkbox } from 'antd';
 import {ReceivingConfirmItem} from "./ReceivingConfirmItem";
 import {CommonHeader} from "../../../components";
 import moment from "moment/moment";
@@ -19,6 +18,8 @@ function closest(el, selector) {
     }
     return null;
 }
+
+const alert = Modal.alert;
 
 class _ReceivingConfirmList extends Component {
 
@@ -44,7 +45,7 @@ class _ReceivingConfirmList extends Component {
                 material: '',
                 inInventoryQuantity: 0,
                 qualifiedQuantity: 0
-            }
+            },
         };
     }
 
@@ -55,7 +56,12 @@ class _ReceivingConfirmList extends Component {
         }
         return true
     }
-
+    componentWillUnmount() {
+        console.log('===componentWillUnmount===called')
+        if (this.timer) {
+            clearTimeout(this.timer);
+          }
+    }
     componentDidUpdate() {
         if (this.state.useBodyScroll) {
             document.body.style.overflow = 'auto';
@@ -65,8 +71,8 @@ class _ReceivingConfirmList extends Component {
     }
 
     async componentDidMount() {
-        const {itemData} = this.props.location.state
-        const code = itemData.number;
+        const {itemData} = this.props.router.location.state
+        const code = itemData.code;
 
         const dbMat = await http.get(`/orderMaterial/find/ordercode/${code}`);
         let materials = dbMat.data.map(m => {
@@ -74,10 +80,11 @@ class _ReceivingConfirmList extends Component {
                 id: m.id,
                 material: m.materiaCode,
                 status: m.status,
+                units: m.units,
                 materialDescription: m.materiaName,
                 quantity:m.materiaNum,
-                inInventoryQuantity: m.totalNumber,
-                qualifiedQuantity: m.qualifiedNumber,
+                inInventoryQuantity: m.totalNumber?m.totalNumber:m.materiaNum,//默认填充发货数量
+                qualifiedQuantity: m.qualifiedNumber?m.qualifiedNumber:m.materiaNum,//默认填充发货数量
             }
         });
         const hei = this.state.height - ReactDOM.findDOMNode(this.lv).offsetTop;
@@ -92,47 +99,19 @@ class _ReceivingConfirmList extends Component {
         });
     }
     onRefresh = () => {
-        // this.setState({ refreshing: true, isLoading: true });
-        // // simulate initial Ajax
-        // setTimeout(() => {
-        //   this.rData = genData();
-        //   this.setState({
-        //     dataSource: this.state.dataSource.cloneWithRows(this.rData),
-        //     refreshing: false,
-        //     isLoading: false,
-        //   });
-        // }, 600);
+       
     };
 
     onEndReached = async (event) => {
-        // const {itemData} = this.props.location.state
-        // const code = itemData.number;
-
-        // console.log(code);
-        // const dbMat = await http.get(`/orderMaterial/find/ordercode/${code}`);
-        // console.log('-------------------------------------------------------------------------------------');
-        // console.log(dbMat.data);
-        // console.log('-------------------------------------------------------------------------------------');
-        // let materials = dbMat.data.map(m => {
-        //     return {
-        //         material: m.materiaCode,
-        //         materialDescription: m.materiaName,
-        //         quantity:m.qualifiedNumber,
-        //     }
-        // });
-        // console.log(materials);
-        // // load new data
-        // // hasMore: from backend data, indicates whether it is the last page, here is false
-        // if (this.state.isLoading && !this.state.hasMore) {
-        //     return;
-        // }   //如果this.state.hasMore为false，说明没数据了，直接返回
-        // console.log('reach end', event);
-        // this.setState({ isLoading: true });
-        // this.rData = this.rData.concat(materials.map((_data) => ({id: freshId(), ..._data})));  //每次下拉之后将新数据装填过来
-        // this.setState({
-        //     dataSource: this.state.dataSource.cloneWithRows(this.rData),
-        //     isLoading: false,
-        // });
+        console.log('===ReceivingConfirmList onEndReached===called')
+        if (this.timer) {
+            clearTimeout(this.timer);
+        }
+        this.timer = setTimeout(() => {
+            this.setState({
+                footerRemoved: true
+            });
+        }, 2000);
     };
 
     onClose = key => () => {
@@ -158,7 +137,7 @@ class _ReceivingConfirmList extends Component {
             this.setState((prevState) => {
                 return {
                     showModal:true,
-                    currentClickedItem: Object.assign({},prevState.currentClickedItem, {id: data.id}, {material:data.material}, {inInventoryQuantity}, {qualifiedQuantity})
+                    currentClickedItem: Object.assign({},prevState.currentClickedItem, {id: data.id}, {material:data.material}, {materialDescription:data.materialDescription}, {units:data.units}, {inInventoryQuantity}, {qualifiedQuantity})
                 }
             })
         } else {
@@ -180,7 +159,9 @@ class _ReceivingConfirmList extends Component {
             qualifiedNumber: item.qualifiedQuantity,
             supplierCode:supplierCode,
             isUpdateOrder: isUpdateOrder,
+            receiveName: user.userName,
         }
+        console.log('order receive params', params);
         const result = await http.post('/orderMaterial/receive', params);
         console.log('result', result);
         if (result.ret === '200' && result.msg === '成功') {
@@ -188,7 +169,10 @@ class _ReceivingConfirmList extends Component {
             materials = materials.map(i => {
                 if (i.id === item.id) {
                     i.status = 2;
+                    i.inInventoryQuantity = item.inInventoryQuantity;
+                    i.qualifiedQuantity = item.qualifiedQuantity;
                 }
+                return i;
             })
             this.setState({
                 materials: materials
@@ -196,10 +180,63 @@ class _ReceivingConfirmList extends Component {
         }
     }
 
+    receiveBatch = () => {
+        alert('批量收货', '确认提交批量收货？', [
+            { text: '取消', onPress: () => console.log('cancel') },
+            { text: '确认', onPress: () => this.batchCommitData() },
+            ])
+    }
+    sinkData = (material) => {
+        let materials = this.state.materials;
+        materials = materials.map( m => {
+            if (m.id === material.id) {
+                m.inInventoryQuantity = material.totalNumber;
+                m.qualifiedQuantity = material.qualifiedNumber;
+            }
+            return m;
+        })
+        this.setState({
+            materials,
+        })
+    }
+    batchCommitData = async () => {
+        const user = Durian.get('user');
+        const supplierCode = user.vendor.value;
+        let materials = this.state.materials;
+        let values = materials.filter(i => i.status === 1).map(i => {
+            return {
+                id: i.id,
+                totalNumber:i.inInventoryQuantity,
+                qualifiedNumber: i.qualifiedQuantity,
+                supplierCode,
+                isUpdateOrder: 1,
+                receiveName: user.userName,
+            }
+        });
+       
+        let params = {
+            batchOrderMaterialList: values,
+        }
+        console.log('order batch receive params', params);
+        const result = await http.post('/orderMaterial/receiveBatch', params);
+        console.log('result', result);
+        if (result.ret === '200' && result.msg === '成功') {
+            let materials = this.state.materials;
+            materials = materials.map(i => {
+                i.status = 2;
+                return i;
+            })
+            this.setState({
+                materials: materials
+            });
+        }
+    }
+   
     render() {
         console.log('_ReceivingConfirmList props', this.props)
-        const {itemData, indicatorBarColor} = this.props.location.state
+        const {itemData, indicatorBarColor} = this.props.router.location.state
         const { currentClickedItem } = this.state
+        console.log('currentClickedItem', currentClickedItem);
         const {vmiFactory} = itemData
         //这里就是个渲染数据，rowData就是每次过来的那一批数据，已经自动给你遍历好了，rouID可以作为key值使用，直接渲染数据即可
         const row = (rowData, sectionID, rowID) => {
@@ -208,23 +245,33 @@ class _ReceivingConfirmList extends Component {
                     data={rowData}
                     indicatorBarColor={indicatorBarColor}
                     onReceivingButtonClicked={this.onReceivingButtonClicked}
+                    sinkData={this.sinkData}
                 />
             );
         };
-
+        
+        const MenuButton = (props) => {
+            return (
+                <span style={{marginRight:'20px'}} onClick={this.receiveBatch}>批量收货</span>
+            );
+        }
         return (
             <RootView>
-                <CommonHeader navBarTitle={vmiFactory} showBackButton={true} />
+                <CommonHeader navBarTitle={vmiFactory} showBackButton={true} showMenuButton={true} menuButton={<MenuButton/>}/>
                 <ListView
                     key={this.state.useBodyScroll ? '0' : '1'}
                     ref={el => this.lv = el}
                     dataSource={this.state.dataSource}
                     renderFooter={    //renderFooter就是下拉时候的loading效果，这里的内容可以自己随需求更改
-                        () => (
-                            <div style={{ padding: 30, textAlign: 'center' }}>
-                                {this.state.isLoading ? '加载中...' : '加载完毕'}
-                            </div>
-                        )
+                        () => {
+                            if (!this.state.footerRemoved) {
+                                 return (
+                                 <div style={{ padding: 10, textAlign: 'center' }}>
+                                     {this.state.isLoading ? '加载中...' : '加载完毕'}
+                                 </div>
+                                 )
+                            }
+                         } 
                     }
                     renderRow={row}   //渲染你上边写好的那个row
                     useBodyScroll={this.state.useBodyScroll}
@@ -253,12 +300,13 @@ class _ReceivingConfirmList extends Component {
                     <ModalRootContainer>
                         <ModalHeader>确定收货</ModalHeader>
                         <ModalContent>
-                            {currentClickedItem.material}<br />
-                            入库:{currentClickedItem.inInventoryQuantity}<br />
-                            合格:{currentClickedItem.qualifiedQuantity}<br />
+                            物料编码:{currentClickedItem.material}<br />
+                            物料描述:{currentClickedItem.materialDescription}<br />
+                            入库:{`${currentClickedItem.inInventoryQuantity} ${currentClickedItem.units}`}<br />
+                            合格:{`${currentClickedItem.qualifiedQuantity}  ${currentClickedItem.units}`}<br />
                             入库时间:{moment().format('YYYY-MM-DD HH:mm:ss')}<br />
                         </ModalContent>
-                        <NotShowAgainLayout>
+                        {/* <NotShowAgainLayout>
                             <Checkbox
                                 onChange={(e)=>{
                                     console.log('Checkbox called', e.target.checked)
@@ -270,7 +318,7 @@ class _ReceivingConfirmList extends Component {
                                 }}
                             >不再提示
                             </Checkbox>
-                        </NotShowAgainLayout>
+                        </NotShowAgainLayout> */}
                         <ModalFooter>
                             <StyledButton isEnabled={false} onClick={()=>{
                                 this.setState({
@@ -332,15 +380,15 @@ const ModalContent = styled.div`
     // border: 1px green solid;
 `
 
-const NotShowAgainLayout = styled.div`
-    display: flex;
-    width: 100%;
-    height: 30px;
-    justify-content: flex-start;
-    align-items: center;
-    font-weight: bold;
-    // border: 1px blue solid;
-`
+// const NotShowAgainLayout = styled.div`
+//     display: flex;
+//     width: 100%;
+//     height: 30px;
+//     justify-content: flex-start;
+//     align-items: center;
+//     font-weight: bold;
+//     // border: 1px blue solid;
+// `
 
 const ModalFooter = styled.div`
     display: flex;

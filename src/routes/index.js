@@ -1,6 +1,6 @@
 import {BrowserRouter as Router, Route, Switch} from 'react-router-dom'
 import React from "react";
-import {AdminPage, LoginMobilePage, LoginPcPage, LookOverPcPage, LookOverMobilePage, ShippingPcPage, ShippingMobilePage, MainPage,SupplierSelectMobilePage} from "../modules";
+import {AdminPage, LoginMobilePage, LoginPcPage, LookOverPcPage, LookOverMobilePage, ShippingPcPage, MainPage,SupplierSelectMobilePage} from "../modules";
 import { AddOtherReceivingInfoDetail } from "../modules/receiving/components/AddOtherReceivingInfoDetail";
 import NotFound from '../NotFound';
 import {ReceivingConfirmList} from "../modules/receiving/components/ReceivingConfirmList";
@@ -9,12 +9,12 @@ import {AddTransferInfo} from "../modules/transfer/components/AddTransferInfo";
 import {AddTransferInfoDetail} from "../modules/transfer/components/AddTransferInfoDetail";
 import {AddDeliverDispatchInfo} from "../modules/dispatch/components/AddDeliverDispatchInfo";
 import {AddDeliverDispatchInfoDetail} from "../modules/dispatch/components/AddDeliverDispatchInfoDetail";
+import {ChangePassword} from "../modules/my/components/ChangePassword";
 import { isPcBrowser } from '../utils'
-import { PrivateRoute} from '../components'
 
 const getRouters = () => {
     return (
-        <Router basename="/vmi">
+        <Router basename="/sanyvmi">
             <div>
                 <Switch>
                     <Route
@@ -154,21 +154,31 @@ const getRouters = () => {
                         }}
                     />
                     <Route
-                        path="/shipping"
+                        path="/changepwd"
                         render={props => {
                             if (isPcBrowser()) {
                                 return (
-                                    <ShippingPcPage
+                                    <LookOverPcPage
                                         router={props}
                                     />
                                 )
                             } else {
                                 return (
-                                    <ShippingMobilePage
+                                    <ChangePassword
                                         router={props}
                                     />
                                 )
                             }
+                        }}
+                    />
+                    <Route
+                        path="/shipping"
+                        render={props => {
+                            return (
+                                <ShippingPcPage
+                                    router={props}
+                                />
+                            )
                         }}
                     />
                     <Route

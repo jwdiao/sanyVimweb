@@ -1,30 +1,35 @@
 /**
  * 发货相关的Table 类型A:
  * 此类Table具备批量操作的功能、且可以编辑行
- * 如：[信息管理-待发货信息]页面的table
+ * 如：[信息管理-发货管理]页面的table
  */
 import React, {Component} from 'react';
-import {Table, Form, Select, Input, Popconfirm, InputNumber, message} from 'antd';
+import {Table, Form, Select, Input, Popconfirm, message, DatePicker} from 'antd';
 import {
     orderStatusList,
-    materialTypeMap,
-    PRIMARY_COLOR,
     toBeShippedTableColumns,
     ERROR_CODE_ADMIN_SANY_FACTORY_SUBMIT_FAIL,
     ERROR_CODE_ADMIN_SANY_FACTORY_OTHER_ERROR,
-    http
+    http, isEmpty
 } from "../../../utils";
 import styled from "styled-components";
+import {TableButton} from "../../admin/components/TableButton";
+import moment from "moment";
 
 const FormItem = Form.Item;
 const EditableContext = React.createContext();
 
 const Option = Select.Option
 
+function disabledDate(current) {
+    // Can not select days before today and today
+    return current && current < moment().startOf('day');
+}
+
 class EditableCell extends React.Component {
     getInput = (columnId) => {
-        const {factoryList} = this.props
-        if (this.props.inputType === 'selector') {
+        const {factoryList, inputType} = this.props
+        if (inputType === 'selector') {
             let options = []
             switch (columnId) {
                 case 'clientFactory':
@@ -48,6 +53,13 @@ class EditableCell extends React.Component {
                     })
                 }
             </Select>
+        } else if (inputType === 'date_picker') {
+            return <DatePicker
+                style={{width: '100%'}}
+                placeholder="请选择预到日期"
+                disabledDate={disabledDate}
+                // onChange={onExpectedDateChangedCalled}
+            />
         }
         return <Input/>;
     };
@@ -67,6 +79,11 @@ class EditableCell extends React.Component {
 
         // 防止factoryList数据尚未返回时，undefined
         if (dataIndex === 'clientFactory' && tableType === 'to_be_shipped_infos' && isEmpty(factoryList)) return null
+
+        // if(dataIndex && record){
+        //     console.log('dataIndex', dataIndex, 'record[dataIndex]', record[dataIndex])
+        // }
+
         return (
             <EditableContext.Consumer>
                 {(form) => {
@@ -81,9 +98,7 @@ class EditableCell extends React.Component {
                                                 required: true,
                                                 message: `请输入${title}!`,
                                             }],
-                                            initialValue: (
-                                                record[dataIndex]
-                                            ),
+                                            initialValue: dataIndex === 'expectReachDate'? moment(record[dataIndex]): record[dataIndex],
                                         })(this.getInput(dataIndex))}
                                     </FormItem>
                                 ) : (
@@ -92,7 +107,11 @@ class EditableCell extends React.Component {
                                         : (
                                             dataIndex === 'clientFactory' && tableType === 'to_be_shipped_infos' && record[dataIndex] !== ''
                                                 ? factoryList.filter(factory => factory.value === record[dataIndex])[0].label
-                                                : restProps.children
+                                                : (
+                                                    dataIndex === 'expectReachDate' && tableType === 'to_be_shipped_infos' && record[dataIndex] !== ''
+                                                        ? moment(record[dataIndex]).format('YYYY-MM-DD')
+                                                        : restProps.children
+                                                )
                                         )
                                 )
                             }
@@ -108,7 +127,7 @@ class _ShippingTableTypeA extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            data: [],
+            data: null,
             columns: [],
             editingKey: '',
             //
@@ -224,16 +243,13 @@ class _ShippingTableTypeA extends Component {
                                 <OperationArea>
                                     <EditableContext.Consumer>
                                         {form => (
-                                            <a
-                                                href="javascript:;"
+                                            <TableButton
+                                                type={'save'}
                                                 onClick={(event) => {
                                                     this.save(form, record)
                                                     event.stopPropagation()
                                                 }}
-                                                style={{marginRight: 8}}
-                                            >
-                                                保存
-                                            </a>
+                                            />
                                         )}
                                     </EditableContext.Consumer>
                                     <Popconfirm
@@ -246,22 +262,31 @@ class _ShippingTableTypeA extends Component {
                                             event.stopPropagation()
                                         }}
                                     >
-                                        <a>取消</a>
+                                        <TableButton
+                                            type='cancel'
+                                        />
                                     </Popconfirm>
                                 </OperationArea>
                             ) : (
                                 <OperationArea>
-                                    <OperationButton
+                                    <TableButton
                                         disabled={editingKey !== ''}
-                                        color={PRIMARY_COLOR}
+                                        type='edit'
                                         onClick={(event) => {
                                             this.edit(record.key)
                                             // 防止与行点击事件冲突
                                             event.stopPropagation()
                                         }}
-                                    >
-                                        编辑
-                                    </OperationButton>
+                                    />
+
+                                    <TableButton
+                                        disabled={editingKey !== ''}
+                                        type='duplicate'
+                                        onClick={(event) => {
+                                            this.duplicate(record.key)
+                                            event.stopPropagation()
+                                        }}
+                                    />
 
                                     <Popconfirm
                                         title="确定删除吗?"
@@ -273,15 +298,13 @@ class _ShippingTableTypeA extends Component {
                                             event.stopPropagation()
                                         }}
                                     >
-                                        <OperationButton
+                                        <TableButton
                                             disabled={editingKey !== ''}
-                                            color="#ff404a"
+                                            type='delete'
                                             onClick={event => {
                                                 event.stopPropagation()
                                             }}
-                                        >
-                                            删除
-                                        </OperationButton>
+                                        />
                                     </Popconfirm>
 
                                 </OperationArea>
@@ -305,7 +328,6 @@ class _ShippingTableTypeA extends Component {
     // 保存
     save = (form, record) => {
         const {tableType, onTableItemEditedListener} = this.props
-        const {factoryList} = this.state
         // console.log('save === factoryList =', factoryList)
         form.validateFields(async (error, row) => {
             if (error) {
@@ -315,7 +337,7 @@ class _ShippingTableTypeA extends Component {
             const index = newData.findIndex(item => record.key === item.key);
             if (index > -1) {
                 const item = newData[index];
-                // console.log('item=', item, 'row=', row)
+                console.log('item=', item, 'row=', row)
 
                 let params = {
                     id: item.id,
@@ -327,7 +349,8 @@ class _ShippingTableTypeA extends Component {
                         requestUrl = '/order/save'
                         params = Object.assign({}, params, {
                             factoryCode: row.clientFactory,// 修改客户工厂
-                            transportTime: row.transportPeriod,// 修改运输周期
+                            transportTime: row.expectReachDate,// 修改运输周期
+                            // saveName: row.operator,// 修改操作员
                         })
                         break
                     default:
@@ -342,16 +365,21 @@ class _ShippingTableTypeA extends Component {
 
                 // console.log('result =' ,result)
                 if (result) {
-                    newData.splice(index, 1, {
-                        ...item,
-                        ...row,
-                    });
-                    this.setState({
-                        data: newData,
-                        editingKey: '',
-                    });
-                    if (onTableItemEditedListener) {
-                        onTableItemEditedListener(tableType, newData)
+                    if (result.ret === '200') {
+                        newData.splice(index, 1, {
+                            ...item,
+                            ...row,
+                        });
+                        this.setState({
+                            data: newData,
+                            editingKey: '',
+                        });
+                        if (onTableItemEditedListener) {
+                            onTableItemEditedListener(tableType, newData)
+                        }
+                        message.success('操作成功！')
+                    } else {
+                        message.error(`数据提交失败！请稍候重试。(${ERROR_CODE_ADMIN_SANY_FACTORY_SUBMIT_FAIL})`)
                     }
                 } else {
                     message.error(`数据提交失败！请稍候重试。(${ERROR_CODE_ADMIN_SANY_FACTORY_SUBMIT_FAIL})`)
@@ -377,6 +405,32 @@ class _ShippingTableTypeA extends Component {
         });
     }
 
+    // 复制
+    duplicate = async (key) => {
+        const {tableType, userInfo} = this.props
+        let newData = [...this.state.data];
+        const index = newData.findIndex(item => key === item.key);
+        if (index > -1) {
+            const result = await this.callNetworkRequest({
+                requestUrl:'/order/copy',
+                params:{ id:newData[index].id, operatorName: userInfo.userName },
+                requestMethod:'POST'
+            })
+
+            if (result && result.ret === '200') {
+                message.success('发货单复制成功！')
+                if (this.props.onTableItemDuplicatedListener) {
+                    this.props.onTableItemDuplicatedListener(tableType)
+                }
+            } else {
+                message.error(`数据提交失败！请稍候重试。(${ERROR_CODE_ADMIN_SANY_FACTORY_SUBMIT_FAIL})`)
+            }
+        } else {
+            console.log('delete button clicked! error!', key)
+            message.error(`数据提交失败！请稍候重试。(${ERROR_CODE_ADMIN_SANY_FACTORY_OTHER_ERROR})`)
+        }
+    }
+
     // 删除
     delete = async (key) => {
         const {tableType, onTableItemsSelectedListener, onTableItemDeletedListener} = this.props
@@ -396,21 +450,29 @@ class _ShippingTableTypeA extends Component {
                 requestMethod
             })
 
+            console.log('rrrrrr', result)
+
             if (result) {
-                const item = newData[index];
-                newData.splice(index, 1);
-                this.setState({
-                    data: newData,
-                    editingKey: '',
-                    selectedRowKeys: [],
-                }, () => {
-                    if (onTableItemsSelectedListener) {
-                        onTableItemsSelectedListener(this.state.selectedRowKeys)
-                    }
-                    if (onTableItemDeletedListener) {
-                        onTableItemDeletedListener(tableType, item)
-                    }
-                });
+                if (result.ret === '200'){
+                    const item = newData[index];
+                    newData.splice(index, 1);
+                    newData = newData.map((data, index) => ({...data, index: index + 1}))// 删除后，注意修改序号
+                    this.setState({
+                        data: newData,
+                        editingKey: '',
+                        selectedRowKeys: [],
+                    }, () => {
+                        if (onTableItemsSelectedListener) {
+                            onTableItemsSelectedListener(this.state.selectedRowKeys)
+                        }
+                        if (onTableItemDeletedListener) {
+                            onTableItemDeletedListener(tableType, item)
+                        }
+                    });
+                    message.success('操作成功！')
+                } else {
+                    message.error(`删除失败！${result.msg}`)
+                }
             } else {
                 message.error(`数据提交失败！请稍候重试。(${ERROR_CODE_ADMIN_SANY_FACTORY_SUBMIT_FAIL})`)
             }
@@ -438,12 +500,12 @@ class _ShippingTableTypeA extends Component {
             result = await http.get(requestUrl)
         }
         console.log(`request: ${requestUrl}`, 'params:', params, 'result:', result)
-        return result && result.ret === '200'
+        return result
     }
 
     render() {
         const {tableType} = this.props
-        const {selectedRowKeys, factoryList} = this.state;
+        const {data, selectedRowKeys, factoryList} = this.state;
         const rowSelection = {
             selectedRowKeys,
             onChange: this.onSelectChange,
@@ -466,9 +528,14 @@ class _ShippingTableTypeA extends Component {
                     tableType,
                     record,
                     inputType:
-                        (col.dataIndex === 'clientFactory')
+                        (
+                            col.dataIndex === 'clientFactory')
                             ? 'selector'
-                            : 'text',
+                            : (
+                                col.dataIndex === 'expectReachDate'
+                                    ? 'date_picker'
+                                    : 'text'
+                            ),
                     dataIndex: col.dataIndex,
                     title: col.title,
                     editing: this.isEditing(record),
@@ -484,17 +551,19 @@ class _ShippingTableTypeA extends Component {
                     // bodyStyle={{minHeight: 'calc(100vh - 280px)', maxHeight: 'calc(100vh - 280px)'}}
                     rowSelection={rowSelection}
                     components={components}
-                    bordered
-                    dataSource={this.state.data}
+                    bordered={false}
+                    dataSource={data}
                     columns={columns}
                     rowClassName="editable-row"
                     pagination={{
+                        showQuickJumper: true,
                         onChange: this.cancel,
                     }}
+                    loading={data===null}
                     onRow={(record) => {
                         return {
                             onClick: (event) => {
-                                // 点击行: 只有在非编辑状态冰球没有点击编辑按钮，才可以响应行点击事件
+                                // 点击行: 只有在非编辑状态并且没有点击编辑按钮，才可以响应行点击事件
                                 if (!this.isEditing(record)) {
                                     this.onRowClicked(record)
                                 }
@@ -511,9 +580,6 @@ class _ShippingTableTypeA extends Component {
     }
 }
 
-function isEmpty(testString) {
-    return !testString || testString.length === 0 || testString === ''
-}
 const EditableFormTable = Form.create()(_ShippingTableTypeA);
 export const ShippingTableTypeA = EditableFormTable;
 
@@ -522,10 +588,4 @@ const OperationArea = styled.div`
   flex-direction: row;
   justify-content: center;
   align-items: center;
-`
-
-const OperationButton = styled.a`
-  margin-left:4%; 
-  margin-right:4%; 
-  color:${p => (p.disabled ? 'gray' : p.color)};
 `

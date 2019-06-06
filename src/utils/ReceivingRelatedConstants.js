@@ -1,35 +1,35 @@
 export const receivingItemsMap = {
-    number: '号码',
-    vmiFactory: 'VMI工厂',
-    inventoryState: '状态',
-    sender: '发货人',
-    sentTime: '发货时间'
+    code: '发货单号',
+    deliveryName: '发货人',
+    transportTime: '预到货时间',
 }
 
 export const receivedItemsMap = {
-    number: '号码',
-    vmiFactory: 'VMI工厂',
-    inventoryState: '状态',
-
-    material:'物料',
-    materialDescription:'物料名称',
-    quantity: '数量',
-    sentTime: '发货时间',
-    sender: '发货人',
+    code: '发货单号',
+    receiveCode: '入库单号',
+    receiveTime: '收货时间',
+}
+export const receivedMaterialMap = {
+    material:'物料编码',
+    units:'单位',
+    materialDescription:'物料描述',
+    quantity: '发货数量',
+    deliveryName: '发货人',
     inInventoryQuantity: '入库数量',
-    qualifiedQuantity: '合格数量'
+    qualifiedQuantity: '合格数量',
+    receiveName: '收货人',
+    receiveTime: '收货时间',
 }
 
 export const otherReceivedItemsMap = {
-    number: '号码',
-    vmiFactory: 'VMI工厂',
-    inventoryState: '状态',
-
-    material:'物料',
-    materialDescription:'物料名称',
+    otherReceiveCode: '入库单号',
+    otherReceiveTime: '入库时间',
+    otherReceiveName: '操作员',
+    material:'物料编码',
+    units:'单位',
+    materialDescription:'物料描述',
     quantity: '数量',
     inventoryPosition: '库位',
-    inInventoryTime: '入库时间',
     reason:'原因',
 }
 

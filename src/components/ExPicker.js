@@ -49,13 +49,13 @@ class _EnhancedPicker extends Component {
       Object.assign(pickerStyle, this.props.pickerStyle);
     }
 
+    if (this.props.showShadow) {
+      pickerStyle.boxShadow = '3px 0px 10px 0px rgba(53,116,250,0.2)';
+    }
     let wrapperStyle = {
       display: 'flex',
       height: '45px',
       lineHeight: '45px',
-    }
-    if (this.props.showShadow) {
-      wrapperStyle.boxShadow = '3px 0px 10px 0px rgba(53,116,250,0.2)';
     }
     let titleWrapperStyle = {
       flex: 1,
@@ -71,6 +71,7 @@ class _EnhancedPicker extends Component {
     }
 
     let extraStyle = { 
+      position:'relative',
       textAlign: 'right', 
       color: '#888', 
       fontSize: '1rem', 
@@ -89,7 +90,7 @@ class _EnhancedPicker extends Component {
             {this.props.showIcon && (<span className="iconfont" style={this.props.titleIconStyle}>{this.props.titleIcon}</span>)}
             <span style={{ marginLeft: '0.5rem' }}>{props.children}</span>
           </div>
-          <div style={extraStyle}>{props.extra}</div>
+          <div style={extraStyle}>{props.extra}<span className='iconfont' style={{ fontSize: '1rem', color: '#333', padding:'0.3rem', borderRadius:'0.2rem', }}>&#xe646;</span></div>
         </div>
       </div>
     );
@@ -100,7 +101,10 @@ class _EnhancedPicker extends Component {
     }
     
     let val =  this.state.pickerValue;
-    
+    const linkage = this.props.linkage;
+    if (linkage) {
+      val = [linkage];
+    }
     if (val.length === 0 && this.props.val) {
       val = [this.props.val]
     }

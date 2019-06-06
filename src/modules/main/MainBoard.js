@@ -5,6 +5,7 @@ import { ReceivingPage } from '../receiving'
 import { DispatchPage } from '../dispatch';
 import { TransferPage } from '../transfer';
 import { MyPage } from '../my';
+import {withRouter} from "react-router-dom";
 
 class _MainBoard extends Component {
     constructor(props) {
@@ -60,6 +61,7 @@ class _MainBoard extends Component {
                             this.setState({
                                 selectedTab: 'receive',
                             });
+                            this.props.location.state = {}
                         }}
                         data-seed="logId"
                     >
@@ -75,6 +77,7 @@ class _MainBoard extends Component {
                             this.setState({
                                 selectedTab: 'dispatch',
                             });
+                            this.props.location.state = {}
                         }}
                         data-seed="logId1"
                     >
@@ -90,6 +93,7 @@ class _MainBoard extends Component {
                             this.setState({
                                 selectedTab: 'transfer',
                             });
+                            this.props.location.state = {}
                         }}
                     >
                         {this.renderContent()}
@@ -104,6 +108,7 @@ class _MainBoard extends Component {
                             this.setState({
                                 selectedTab: 'my',
                             });
+                            this.props.location.state = {}
                         }}
                     >
                         {this.renderContent()}
@@ -114,4 +119,4 @@ class _MainBoard extends Component {
     }
 }
 
-export const MainPage = _MainBoard;
+export const MainPage = withRouter(_MainBoard);

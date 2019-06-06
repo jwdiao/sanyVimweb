@@ -10,15 +10,15 @@ import { OtherReceivedList } from './OtherReceivedList'
 import {Icon} from "antd";
 
 const tabs = [
-  { title: '待收货', sub: '1' },
-  { title: '已收货', sub: '2' },
+  { title: '待入库', sub: '1' },
+  { title: '已入库', sub: '2' },
   { title: '其他入库', sub: '3' },
 ];
 
 class _ReceivingPage extends Component {
   constructor(props) {
     super(props);
-    console.log('props', props);
+    console.log('receiving page props', props);
     this.state = {
       selectedTab: this.props.location.state?this.props.location.state.tab:0,
       hidden: false,
@@ -34,7 +34,7 @@ class _ReceivingPage extends Component {
 
   renderTabContent() {
     const { selectedTab } = this.state;
-
+    console.log('selectedTab', selectedTab);
     let comp;
     switch (selectedTab) {
       case 0:
@@ -112,7 +112,7 @@ const AddButton = styled.div`
     align-self: flex-end;
     justify-content: center;
     align-items: center;
-    background:rgba(40, 160, 246, 1);
+    background:rgba(40, 160, 246, .7);
     height: 64px;
     width: 64px;
     border-radius: 32px;
@@ -120,7 +120,4 @@ const AddButton = styled.div`
     margin-top: -15vh;
     margin-bottom: 5vh;
     margin-right: 10vw;
-    //&.am-button > .am-button-icon {
-    //     // margin-right: 0;
-    //     // }
 `

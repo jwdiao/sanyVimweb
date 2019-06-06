@@ -17,31 +17,31 @@ class _ReceivingItem extends Component {
         return (
             <RootView
                 onClick={()=>{
-                    history.push('/main/receiving-confirm', {itemData: data, indicatorBarColor})
+                    history.push('/main/receiving-confirm', {itemData: data, indicatorBarColor, from:'receive', tab:0})
                 }}
             >
                 <IndicatorLeftBar color={indicatorBarColor}/>
                 <ContentView>
-                    {
-                        keys.slice(0,keys.length-1).map((_key, index)=>{
-                            // console.log('_key, index', _key, index)
-                            return (
-                                <ItemWrapper
-                                    key={_key}>
-                                    <ItemView>
-                                        <ContentTitleText>{receivingItemsMap[_key]}</ContentTitleText>
-                                        <ContentContentText>{data[_key]}</ContentContentText>
-                                    </ItemView>
-                                    {
-                                        index < keys.length-2 && (
-                                            <SeparateLine/>
-                                        )
-                                    }
-                                </ItemWrapper>
-
-                            )
-                        })
-                    }
+                    <ItemWrapper>
+                        <ItemView>
+                            <ContentTitleText>{receivingItemsMap['code']}</ContentTitleText>
+                            <ContentContentText>{data['code']}</ContentContentText>
+                        </ItemView>
+                    </ItemWrapper>
+                    <SeparateLine/>
+                    <ItemWrapper>
+                        <ItemView>
+                            <ContentTitleText>{receivingItemsMap['deliveryName']}</ContentTitleText>
+                            <ContentContentText>{data['deliveryName']}</ContentContentText>
+                        </ItemView>
+                    </ItemWrapper>
+                    <SeparateLine/>
+                    <ItemWrapper>
+                        <ItemView>
+                            <ContentTitleText>{receivingItemsMap['transportTime']}</ContentTitleText>
+                            <ContentContentText>{data['transportTime']}</ContentContentText>
+                        </ItemView>
+                    </ItemWrapper>
                 </ContentView>
                 <IndicatorRightBar color={generateRandomColor(id)}>
                     <IndicatorRightBarLine height={'16px'}/>
@@ -87,7 +87,7 @@ const IndicatorRightBar = styled.div`
 const IndicatorRightBarLine = styled.div`
     display: flex;
     align-self: center;
-    background-color:rgba(210, 209, 209, 1);
+    background-color:#666;
     height: ${p => p.height};
     width: 1px;
     margin-right: 3px;
@@ -125,10 +125,11 @@ const SeparateLine = styled.div`
     border: rgba(216, 215, 215, 1) dashed 0.5px;
 `
 const ContentTitleText = styled.div`
-    color: #363535;
+    color: #333;
     font-size: 14px;
 `
 const ContentContentText = styled.div`
     color: #333;
+    font-weight:bold;
     font-size: 14px;
 `

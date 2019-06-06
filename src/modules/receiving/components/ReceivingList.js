@@ -10,6 +10,7 @@ class _ReceivingList extends Component {
                     listType="ReceivingList"
                 />
             </RootView>
+
         );
     }
 }
@@ -17,6 +18,7 @@ class _ReceivingList extends Component {
 export const ReceivingList = _ReceivingList
 
 const RootView = styled.div`
-    background:#eee;
-    height: calc(100vh - 60px);
+    display:flex;
+    flex:1;
+    flex-direction: column;
 `

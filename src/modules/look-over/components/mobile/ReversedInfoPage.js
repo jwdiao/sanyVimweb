@@ -86,9 +86,7 @@ export const ReversedInfoPage = _ReversedInfoMobilePage;
 const RootView = styled.div`
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 70px);
-    overflow: hidden;
-    justify-content: flex-start;
+    flex:1;
 `
 
 const SubTabWrapperStyle = styled.div`
@@ -98,7 +96,7 @@ const SubTabWrapperStyle = styled.div`
    align-items: center;
    background: ${p=>p.isSelectedItem ? 'linear-gradient(90deg,rgba(9,182,253,1),rgba(96,120,234,1))' : 'transparent'};
    color: ${p=>p.isSelectedItem ? '#fff' : 'rgba(54, 53, 53, 1)'};
-   font-size: 14px;
+   font-size: 12px;
    height: 28px;
    border-radius: 12px;
    width: 90%;

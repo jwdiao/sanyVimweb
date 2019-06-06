@@ -7,9 +7,10 @@ const _ = require('lodash')
 class _AddTransferInfoItem extends Component {
     render() {
         const material = this.props.data
+        const { units } = material.material;
+        console.log('_AddTransferInfoItem material', material);
+        console.log('_AddTransferInfoItem units', units);
         let materialKeys = _.keys(material)
-        // let index = materialKeys.findIndex(material=>material === 'id')
-        // materialKeys.splice(index,1)
         return (
             <RootView>
                 <OperationHeader>
@@ -19,12 +20,16 @@ class _AddTransferInfoItem extends Component {
                 <ContentView>
                     {
                         materialKeys.slice(1,materialKeys.length).map((materialKey, index) => {
+                            let val = material[materialKey].label;
+                            if (_.indexOf(['quantity', 'inInventoryQuantity', 'qualifiedQuantity'], materialKey) >= 0) {
+                                val = val + ' ' + units;
+                            }
                             return (
                                 <ItemWrapper
                                     key={materialKey}>
                                     <ItemView>
                                         <TitleText>{transferItemsMap[materialKey]}</TitleText>
-                                        <ContentContentText>{material[materialKey]}</ContentContentText>
+                                        <ContentContentText>{val}</ContentContentText>
                                     </ItemView>
                                     {
                                         index < materialKeys.length-2 && (

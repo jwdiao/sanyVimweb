@@ -8,23 +8,25 @@ const _ = require('lodash')
 class _InventoryInfoListItem extends Component {
     render() {
         const { data, rowID } = this.props
-        // console.log('this.props = ',this.props)
+        const { units } = data;
         let keys = _.keys(data)
-        // let index = keys.findIndex(key => key === 'id')
-        // keys.splice(index,1)
+        _.remove(keys, i => i === 'units');
         return (
             <RootView>
                 <IndicatorTopBar color={generateRandomColor(rowID)}/>
                 <ContentView>
                     {
                         keys.map((_key, index)=>{
-                            // console.log('_key, index', _key, index)
+                            let val = data[_key];
+                            if (_.indexOf(['quantity', 'inInventoryQuantity', 'qualifiedQuantity', 'unqualifiedQuantity', 'onTheWayQuantity'], _key) >= 0) {
+                                val = val + ' ' + units;
+                            }
                             return (
                                 <ItemWrapper
                                     key={_key}>
                                     <ItemView>
                                         <TitleText>{inventoryInfoListItemsMap[_key]}</TitleText>
-                                        <ContentContentText>{data[_key]}</ContentContentText>
+                                        <ContentContentText>{val}</ContentContentText>
                                     </ItemView>
                                     {
                                         index < keys.length-1 && (
@@ -49,7 +51,7 @@ const RootView = styled.div`
     flex: 1;
     height:250px;
     flex-direction: column;
-    margin: 16px 16px 16px 20px;
+    margin: 0 16px 16px 16px;
     justify-content: center;
     align-items: center;
     border-radius: 4px;
@@ -104,11 +106,12 @@ const SeparateLine = styled.div`
 `
 
 const TitleText = styled.div`
-    color: rgba(54, 53, 53, 1);
+    color: #333;
     font-size: 14px;
 `
 
 const ContentContentText = styled.div`
-    color: rgba(51, 51, 51, 1);
+    color: #333;
     font-size: 14px;
+    font-weight:bold;
 `

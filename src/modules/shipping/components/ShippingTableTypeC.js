@@ -7,10 +7,13 @@ import React, {Component} from 'react';
 import {Table} from "antd";
 import {
     goodsTransferTableColumns,
-    inventoryInfosTableColumns, orderStatusList,orderMaterialStatusList,
+    inventoryInfosTableColumns,
     reversedInfosTableColumns,
-    vmiReceivedTableColumns
+    vmiReceivedTableColumns,
+    reversedInfoStatusList,
+    goodsTransferStatusList
 } from "../../../utils";
+import moment from "moment";
 
 class FormCellComponent extends Component {
     render(){
@@ -25,28 +28,33 @@ class FormCellComponent extends Component {
             ...restProps
         } = this.props;
         if (dataIndex === 'status' && record[dataIndex]!=='') {
-            if (tableType === 'vmi_received_infos'|| tableType === 'reversed_infos_query') {
+            if (tableType === 'reversed_infos_query') {
+                console.log('record[dataIndex]',record[dataIndex])
                 return (
                     <td {...restProps}>
                         {
-                            orderStatusList.filter(status => status.value === parseInt(record[dataIndex]))[0].label //避免使用字面量作为value: 如 value为1,2,3...，显示的是'待发货/待发货'
+                            reversedInfoStatusList.filter(status => status.value === parseInt(record[dataIndex]))[0].label //避免使用字面量作为value: 如 value为1,2,3...，显示的是'待发货/待发货'
                         }
                     </td>
                 )
-            } else if (tableType === 'goods_transfer_query'|| tableType === 'inventory_infos_query') {
+            } else if (tableType === 'goods_transfer_query') {
                 // console.log('rrr',record)
-                let parsedValue = parseInt(record[dataIndex])
-                // 过滤脏数据：物料状态只有待收货(1) 已收货(2)
-                if (parsedValue <= 2) {
-                    return (
-                        <td {...restProps}>
-                            {
-                                orderMaterialStatusList.filter(status => status.value === parseInt(record[dataIndex]))[0].label //避免使用字面量作为value: 如 value为1,2,3...，显示的是'待发货/待发货'
-                            }
-                        </td>
-                    )
-                }
+                return (
+                    <td {...restProps}>
+                        {
+                            goodsTransferStatusList.filter(status => status.value === parseInt(record[dataIndex]))[0].label //避免使用字面量作为value: 如 value为1,2,3...，显示的是'待发货/待发货'
+                        }
+                    </td>
+                )
             }
+        } else if (dataIndex === 'expectReachDate' && record[dataIndex]!=='') {
+            return (
+                <td {...restProps}>
+                    {
+                        moment(record[dataIndex]).format('YYYY-MM-DD')//预到日期是moment类型
+                    }
+                </td>
+            )
         }
         return (
             <td {...restProps}>
@@ -62,7 +70,8 @@ class _ShippingTableTypeC extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            data: [],
+            currentTableType:'',
+            data: null,
             columns: [],
             loading: true,
         };
@@ -72,14 +81,13 @@ class _ShippingTableTypeC extends Component {
         // console.log('componentWillMount called', this.props)
         //Todo:For test only
         const {tableType, dataSet} = this.props
-        if (dataSet) {
-            let tableFields = this.constructTableFields(tableType)
-            this.setState({
-                data: dataSet,
-                columns: tableFields,
-                loading: false
-            })
-        }
+        let tableFields = this.constructTableFields(tableType)
+        this.setState({
+            currentTableType: tableType,
+            data: dataSet,
+            columns: tableFields,
+            loading: false
+        })
     }
 
     componentWillReceiveProps(nextProps, nextState) {
@@ -88,14 +96,13 @@ class _ShippingTableTypeC extends Component {
         const {tableType: tableTypeNext, dataSet:dataSetNext} = nextProps
         if (tableTypeThis !== tableTypeNext || dataSetThis!==dataSetNext) {
             const {tableType, dataSet} = nextProps
-            if (dataSet) {
-                let tableFields = this.constructTableFields(tableType)
-                this.setState({
-                    data: dataSet,
-                    columns: tableFields,
-                    loading: false
-                })
-            }
+            let tableFields = this.constructTableFields(tableType)
+            this.setState({
+                currentTableType: tableType,
+                data: dataSet,
+                columns: tableFields,
+                loading: false
+            })
         }
     }
 
@@ -135,11 +142,7 @@ class _ShippingTableTypeC extends Component {
     }
 
     render() {
-        const {tableType} = this.props
-        const {loading} = this.state
-        console.log('typec render', loading)
-        if (loading) return null
-
+        const {data, currentTableType} = this.state
         const components = {
             body: {
                 cell: FormCellComponent,
@@ -150,7 +153,7 @@ class _ShippingTableTypeC extends Component {
             return {
                 ...col,
                 onCell : record => ({
-                    tableType,
+                    tableType: currentTableType,
                     record,
                     dataIndex: col.dataIndex,
                 })
@@ -161,10 +164,10 @@ class _ShippingTableTypeC extends Component {
             <Table
                 className="data-board-table"
                 // bodyStyle={{minHeight: 'calc(100vh - 280px)', maxHeight: 'calc(100vh - 280px)'}}
-                loading={loading}
-                bordered
-                dataSource={this.state.data}
+                bordered={false}
+                dataSource={data}
                 components={components}
+                loading={data === null}
                 columns={columns}
                 onRow={(record) => {
                     return {
@@ -174,6 +177,10 @@ class _ShippingTableTypeC extends Component {
                         // onMouseEnter: (event) => {},  // 鼠标移入行
                         // onMouseLeave: (event) => {}
                     };
+                }}
+                scroll={{ x: currentTableType === 'goods_transfer_query' ? '120%':false }}
+                pagination={{
+                    showQuickJumper: true,
                 }}
             />
         );
