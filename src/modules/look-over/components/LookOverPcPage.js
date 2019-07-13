@@ -162,7 +162,12 @@ class _LookOverPage extends Component {
                                 </div>
                             </HeaderContainer>
                             <HeaderContainer>
-                                <div style={{fontSize: 18, fontWeight: "normal"}}>{this.loginUser?this.loginUser.name:''}，欢迎您</div>
+                                <div style={{
+                                    fontSize: 18,
+                                    fontWeight: "normal",
+                                    color: PRIMARY_TEXT_COLOR
+                                }}>{this.loginUser ? `${this.loginUser.vendor ? this.loginUser.vendor.label + ' ':''}${this.loginUser.name}，` : ''}欢迎您
+                                </div>
                                 <Popover content={
                                     <PopOverContent
                                         onModifyPasswordCalled={this.onModifyPasswordCalled}

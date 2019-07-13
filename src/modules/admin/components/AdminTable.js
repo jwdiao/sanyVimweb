@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {Form, Input, Popconfirm, Table, Select, message} from "antd";
+import {Form, Input, Popconfirm, Table, Select, message, Popover} from "antd";
 import freshId from 'fresh-id'
 import styled from 'styled-components'
 import {
@@ -19,6 +19,8 @@ const FormItem = Form.Item;
 const EditableContext = React.createContext();
 
 const Option = Select.Option
+
+const _ = require('lodash')
 
 class EditableCell extends React.Component {
 
@@ -155,41 +157,61 @@ class EditableCell extends React.Component {
                         // console.log('dataIndex', dataIndex, 'record',record)
                     }
 
+                    let popoverContent = []
+                    if (dataIndex === 'vendor' && record) {
+                        // popoverContent = record['vendor'].replace(/,/g,'\n')
+                        // console.log('popoverContent',popoverContent)
+                        popoverContent = record['vendor'].split(',')
+                        // console.log('popoverContent',popoverContent)
+                    }
+
                     return (
-                        <td {...restProps}>
-                            {
-                                editing ? (
-                                    <FormItem style={{margin: 0}}>
-                                        {getFieldDecorator(dataIndex, {
-                                            rules: [
-                                                {
-                                                    required: !(dataIndex === 'vendor' && (record.role === 1 || record.role === 2)),// 对于超级管理员、VMI工厂管理员，不强制（不必）输入供应商
-                                                    message: `请输入 ${title}!`,
-                                                },
-                                                {pattern: /^[^\s]*$/, message: '该字段不允许输入空格!'},
-                                            ],
-                                            initialValue: dataIndex === 'vendor' ? vendorInitialValueList : record[dataIndex],
-                                        })(this.getInput(dataIndex, record, tableType))}
-                                    </FormItem>
-                                ) : (
-                                    dataIndex === 'status' && record[dataIndex] !== ''
-                                        ? validStateList.filter(status => status.value === parseInt(record[dataIndex]))[0].label //避免使用字面量作为value: 如 value为1,2,3...，显示的是'待发货/待发货'
-                                        : (
-                                            dataIndex === 'role' && record[dataIndex] !== ''
-                                                ? roleList.filter(role => role.value === parseInt(record[dataIndex]))[0].label
-                                                : (
-                                                    dataIndex === 'vendor' && record[dataIndex] !== ''
-                                                        ? record[dataIndex].substr(0, record[dataIndex].length - 1)
-                                                        : (
-                                                            dataIndex === 'password' && record[dataIndex] !== ''
-                                                                ? '••••••••'
-                                                                : restProps.children
-                                                        )
-                                                )
-                                        )
-                                )
+                        <Popover
+                            overlayStyle={{maxWidth:'300px'}}
+                            placement="bottom"
+                            content={
+                                <div>{popoverContent.map(content=>{
+                                    return <p>{content}</p>
+                                })}</div>
                             }
-                        </td>
+                            trigger={dataIndex === 'vendor' && record && record['vendor'].length>32 ?"hover":'none'}
+                        >
+                            <td {...restProps}>
+                                {
+                                    editing ? (
+                                        <FormItem style={{margin: 0}}>
+                                            {getFieldDecorator(dataIndex, {
+                                                rules: [
+                                                    {
+                                                        required: !(dataIndex === 'vendor' && (record.role === 1 || record.role === 2)),// 对于超级管理员、VMI工厂管理员，不强制（不必）输入供应商
+                                                        message: `请输入 ${title}!`,
+                                                    },
+                                                    {pattern: /^[^\s]*$/, message: '该字段不允许输入空格!'},
+                                                ],
+                                                initialValue: dataIndex === 'vendor' ? vendorInitialValueList : record[dataIndex],
+                                            })(this.getInput(dataIndex, record, tableType))}
+                                        </FormItem>
+                                    ) : (
+                                        dataIndex === 'status' && record[dataIndex] !== ''
+                                            ? validStateList.filter(status => status.value === parseInt(record[dataIndex]))[0].label //避免使用字面量作为value: 如 value为1,2,3...，显示的是'待发货/待发货'
+                                            : (
+                                                dataIndex === 'role' && record[dataIndex] !== ''
+                                                    ? roleList.filter(role => role.value === parseInt(record[dataIndex]))[0].label
+                                                    : (
+                                                        dataIndex === 'vendor' && record[dataIndex] !== ''
+                                                            // ? record[dataIndex].substr(0, record[dataIndex].length - 1)
+                                                            ? (record[dataIndex].length>32 ? record[dataIndex].substr(0, 32)+'...' : record[dataIndex].substr(0, record[dataIndex].length - 1))
+                                                            : (
+                                                                dataIndex === 'password' && record[dataIndex] !== ''
+                                                                    ? '••••••••'
+                                                                    : restProps.children
+                                                            )
+                                                    )
+                                            )
+                                    )
+                                }
+                            </td>
+                        </Popover>
                     );
                 }}
             </EditableContext.Consumer>

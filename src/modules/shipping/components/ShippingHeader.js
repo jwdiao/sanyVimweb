@@ -910,7 +910,7 @@ class _ShippingHeader extends Component {
             case 'inventory_infos_query':
                 tableComponent = (
                     <TableControllerView>
-                        <TableSearchView style={{width: '50%', justifyContent: 'flex-start'}}>
+                        <TableSearchView style={{width: shouldShowBatchUpload?'30%':'50%', justifyContent: 'flex-start'}}>
                             {/*<DatePicker*/}
                             {/*    style={{marginRight: '6px'}}*/}
                             {/*    placeholder="请选择日期"*/}

@@ -198,7 +198,7 @@ class _ShippingPage extends Component {
                                     fontSize: 18,
                                     fontWeight: "normal",
                                     color: PRIMARY_TEXT_COLOR
-                                }}>{this.loginUser ? this.loginUser.name : ''}，欢迎您
+                                }}>{this.loginUser ? `${this.loginUser.vendor ? this.loginUser.vendor.label + ' ':''}${this.loginUser.name}，` : ''}欢迎您
                                 </div>
                                 <Popover content={
                                     <PopOverContent
