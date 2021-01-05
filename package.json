@@ -5,7 +5,7 @@
   "dependencies": {
     "antd": "^3.16.3",
     "antd-mobile": "^2.2.11",
-    "axios": "^0.18.0",
+    "axios": "^0.21.1",
     "crypto-js": "^3.1.9-1",
     "customize-cra": "^0.2.12",
     "fresh-id": "^1.1.0",
